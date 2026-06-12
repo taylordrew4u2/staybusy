@@ -79,6 +79,13 @@ struct BlockDetailView: View {
         .onChange(of: block.attachmentFilenames) { _, names in
             attachmentURLs = AttachmentStore.urls(for: names)
         }
+        .onChange(of: leaveByModel.state) { _, newState in
+            if case .ready(let leaveBy, _) = newState {
+                Task {
+                    await NotificationManager.shared.registerLeaveBy(leaveBy, for: block)
+                }
+            }
+        }
         .photosPicker(
             isPresented: $showPhotosPicker,
             selection: $photosSelection,
@@ -779,7 +786,7 @@ enum AttachmentStore {
 
 @Observable
 final class LeaveByModel: NSObject, CLLocationManagerDelegate {
-    enum State {
+    enum State: Equatable {
         case idle
         case requestingPermission
         case denied

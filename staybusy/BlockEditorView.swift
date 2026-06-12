@@ -138,6 +138,8 @@ struct BlockEditorView: View {
 
     private func save() {
         guard canSave else { return }
+        let isCreate = editing == nil
+        let resultBlock: Block
         if let b = editing {
             b.title = trimmedTitle
             b.start = start
@@ -150,6 +152,7 @@ struct BlockEditorView: View {
             b.confirmationCode = confirmationCode
             b.notes = notes
             b.links = links
+            resultBlock = b
         } else {
             let new = Block(
                 title: trimmedTitle,
@@ -165,13 +168,22 @@ struct BlockEditorView: View {
                 links: links
             )
             context.insert(new)
+            resultBlock = new
         }
         try? context.save()
+        Task {
+            if isCreate {
+                await NotificationManager.shared.blockCreated(resultBlock)
+            } else {
+                await NotificationManager.shared.blockUpdated(resultBlock)
+            }
+        }
         dismiss()
     }
 
     private func delete() {
         guard let b = editing else { return }
+        NotificationManager.shared.blockDeleted(b)
         onDelete?()
         dismiss()
         let ctx = context

@@ -20,6 +20,7 @@ final class Block {
     var notes: String
     var links: [String]
     var attachmentFilenames: [String]
+    var notificationID: String = ""
 
     var category: BlockCategory {
         get { BlockCategory(rawValue: categoryRaw) ?? .admin }
@@ -52,5 +53,6 @@ final class Block {
         self.notes = notes
         self.links = links
         self.attachmentFilenames = attachmentFilenames
+        self.notificationID = UUID().uuidString
     }
 }

@@ -82,6 +82,12 @@ struct TodayView: View {
                 }
             }
         }
+        .onAppear {
+            LiveActivityManager.shared.sync(blocks: allBlocks)
+        }
+        .onChange(of: allBlocks) { _, new in
+            LiveActivityManager.shared.sync(blocks: new)
+        }
     }
 
     private func suggestedStartForCreate() -> Date {
@@ -209,9 +215,22 @@ private struct NowNextBar: View {
                 .sorted { $0.start < $1.start }
                 .first
             content(now: now, current: current, next: next)
+                .task(id: snapshotKey(current: current, next: next)) {
+                    LiveActivityManager.shared.sync(blocks: allBlocks)
+                }
         }
         .padding(14)
         .background(Theme.surfaceElevated, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func snapshotKey(current: Block?, next: Block?) -> String {
+        let c = current.map {
+            "\($0.persistentModelID.hashValue):\($0.title):\(Int($0.end.timeIntervalSince1970))"
+        } ?? "nil"
+        let n = next.map {
+            "\($0.persistentModelID.hashValue):\($0.title):\(Int($0.start.timeIntervalSince1970))"
+        } ?? "nil"
+        return "\(c)|\(n)"
     }
 
     @ViewBuilder
