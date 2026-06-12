@@ -31,7 +31,6 @@
 		BA0ED0A62FDCBBD100D92071 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		BA0ED0A82FDCBBD100D92071 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		BA0ED0D12FDCC42B00D92071 /* StayBusyWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StayBusyWidgetsExtension.entitlements; sourceTree = "<group>"; };
-		BA0ED0DC2FDCC92300D92071 /* StayBusyWidgets.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StayBusyWidgets.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -53,7 +52,6 @@
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		BA0ED0AA2FDCBBD100D92071 /* StayBusyWidgets */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (BA0ED0BE2FDCBBD300D92071 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = StayBusyWidgets; sourceTree = "<group>"; };
-		BA0ED0DD2FDCC92300D92071 /* StayBusyWidgets */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = StayBusyWidgets; sourceTree = "<group>"; };
 		SB00000000000000000001 /* staybusy */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (SB00000000000000000020 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = staybusy; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -64,13 +62,6 @@
 			files = (
 				BA0ED0A92FDCBBD100D92071 /* SwiftUI.framework in Frameworks */,
 				BA0ED0A72FDCBBD100D92071 /* WidgetKit.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		BA0ED0D92FDCC92300D92071 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -99,7 +90,6 @@
 				BA0ED0D12FDCC42B00D92071 /* StayBusyWidgetsExtension.entitlements */,
 				SB00000000000000000001 /* staybusy */,
 				BA0ED0AA2FDCBBD100D92071 /* StayBusyWidgets */,
-				BA0ED0DD2FDCC92300D92071 /* StayBusyWidgets */,
 				BA0ED0A52FDCBBD100D92071 /* Frameworks */,
 				SB00000000000000000004 /* Products */,
 			);
@@ -109,7 +99,6 @@
 			isa = PBXGroup;
 			children = (
 				BA0ED0A42FDCBBD100D92071 /* StayBusyWidgetsExtension.appex */,
-				BA0ED0DC2FDCC92300D92071 /* StayBusyWidgets.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -138,28 +127,6 @@
 			productName = StayBusyWidgetsExtension;
 			productReference = BA0ED0A42FDCBBD100D92071 /* StayBusyWidgetsExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
-		};
-		BA0ED0DB2FDCC92300D92071 /* StayBusyWidgets */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = BA0ED0E42FDCC92400D92071 /* Build configuration list for PBXNativeTarget "StayBusyWidgets" */;
-			buildPhases = (
-				BA0ED0D82FDCC92300D92071 /* Sources */,
-				BA0ED0D92FDCC92300D92071 /* Frameworks */,
-				BA0ED0DA2FDCC92300D92071 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				BA0ED0DD2FDCC92300D92071 /* StayBusyWidgets */,
-			);
-			name = StayBusyWidgets;
-			packageProductDependencies = (
-			);
-			productName = StayBusyWidgets;
-			productReference = BA0ED0DC2FDCC92300D92071 /* StayBusyWidgets.app */;
-			productType = "com.apple.product-type.application";
 		};
 		SB00000000000000000006 /* staybusy */ = {
 			isa = PBXNativeTarget;
@@ -194,9 +161,6 @@
 					BA0ED0A32FDCBBD100D92071 = {
 						CreatedOnToolsVersion = 26.5;
 					};
-					BA0ED0DB2FDCC92300D92071 = {
-						CreatedOnToolsVersion = 26.5;
-					};
 					SB00000000000000000006 = {
 						CreatedOnToolsVersion = 26.5;
 					};
@@ -217,20 +181,12 @@
 			targets = (
 				SB00000000000000000006 /* staybusy */,
 				BA0ED0A32FDCBBD100D92071 /* StayBusyWidgetsExtension */,
-				BA0ED0DB2FDCC92300D92071 /* StayBusyWidgets */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		BA0ED0A22FDCBBD100D92071 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		BA0ED0DA2FDCC92300D92071 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -248,13 +204,6 @@
 
 /* Begin PBXSourcesBuildPhase section */
 		BA0ED0A02FDCBBD100D92071 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		BA0ED0D82FDCC92300D92071 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -328,72 +277,6 @@
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-		BA0ED0E52FDCC92400D92071 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = R44WG942GS;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.staybusy.app.StayBusyWidgets;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		BA0ED0E62FDCC92400D92071 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = R44WG942GS;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.staybusy.app.StayBusyWidgets;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -590,15 +473,6 @@
 			buildConfigurations = (
 				BA0ED0BC2FDCBBD300D92071 /* Debug */,
 				BA0ED0BD2FDCBBD300D92071 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		BA0ED0E42FDCC92400D92071 /* Build configuration list for PBXNativeTarget "StayBusyWidgets" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				BA0ED0E52FDCC92400D92071 /* Debug */,
-				BA0ED0E62FDCC92400D92071 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
