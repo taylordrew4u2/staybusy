@@ -6,15 +6,10 @@
 	<array>
 		<string>comgooglemaps</string>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>StayBusy uses the camera to capture ticket and confirmation photos.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>StayBusy uses your location to estimate when to leave for each scheduled block.</string>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>location</string>
 	</array>
 </dict>
 </plist>
