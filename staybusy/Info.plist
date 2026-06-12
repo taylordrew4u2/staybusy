@@ -10,5 +10,7 @@
 	<string>StayBusy uses the camera to capture ticket and confirmation photos.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>StayBusy uses your location to estimate when to leave for each scheduled block.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 </dict>
 </plist>
