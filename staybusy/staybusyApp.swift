@@ -13,7 +13,10 @@ struct staybusyApp: App {
     init() {
         do {
             let storeURL = staybusyApp.makeStoreURL()
-            let config = ModelConfiguration(url: storeURL)
+            let config = ModelConfiguration(
+                url: storeURL,
+                cloudKitDatabase: .private(StayBusyCloudKit.containerIdentifier)
+            )
             container = try ModelContainer(for: Block.self, configurations: config)
             #if DEBUG
             SampleData.seedIfNeeded(context: container.mainContext)
@@ -21,6 +24,10 @@ struct staybusyApp: App {
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
+    }
+
+    enum StayBusyCloudKit {
+        static let containerIdentifier = "iCloud.com.staybusy.app"
     }
 
     var body: some Scene {

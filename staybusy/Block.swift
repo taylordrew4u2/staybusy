@@ -8,18 +8,18 @@ import SwiftData
 
 @Model
 final class Block {
-    var title: String
-    var start: Date
-    var end: Date
-    var categoryRaw: String
-    var locationName: String
-    var address: String
+    var title: String = ""
+    var start: Date = Date()
+    var end: Date = Date()
+    var categoryRaw: String = BlockCategory.admin.rawValue
+    var locationName: String = ""
+    var address: String = ""
     var latitude: Double?
     var longitude: Double?
-    var confirmationCode: String
-    var notes: String
-    var links: [String]
-    var attachmentFilenames: [String]
+    var confirmationCode: String = ""
+    var notes: String = ""
+    var links: [String] = []
+    var attachmentFilenames: [String] = []
     var notificationID: String = ""
 
     var category: BlockCategory {

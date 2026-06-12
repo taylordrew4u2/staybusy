@@ -152,7 +152,9 @@ struct RemainingBlocksProvider: TimelineProvider {
             forSecurityApplicationGroupIdentifier: StayBusyAppGroup.identifier
         ) {
             let storeURL = groupURL.appendingPathComponent("staybusy.sqlite")
-            let config = ModelConfiguration(url: storeURL)
+            // Widget reads the local copy of the store that the main app keeps
+            // in sync with CloudKit; the widget itself does not sync.
+            let config = ModelConfiguration(url: storeURL, cloudKitDatabase: .none)
             return try ModelContainer(for: Block.self, configurations: config)
         }
         // Fallback (no App Group capability): widget will see an empty store.
