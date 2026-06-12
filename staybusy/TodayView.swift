@@ -12,7 +12,7 @@ struct TodayView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Block.start, order: .forward) private var allBlocks: [Block]
 
-    @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
+    @Binding var selectedDate: Date
     @State private var navigationPath = NavigationPath()
     @State private var presentedSheet: EditorSheet?
 
@@ -660,6 +660,6 @@ private struct FloatingAddButton: View {
 }
 
 #Preview {
-    TodayView()
+    TodayView(selectedDate: .constant(Date()))
         .modelContainer(for: Block.self, inMemory: true)
 }
