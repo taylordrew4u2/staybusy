@@ -43,24 +43,14 @@ enum BlockCategory: String, CaseIterable, Identifiable, Codable {
         }
     }
 
+    /// Raw category color — use for stripes, fills, icons.
     var color: Color {
-        switch self {
-        case .gig:
-            return Theme.accent
-        case .travel:
-            return Color(red: 0.30, green: 0.69, blue: 0.95)
-        case .food:
-            return Color(red: 0.98, green: 0.65, blue: 0.20)
-        case .social:
-            return Color(red: 0.85, green: 0.45, blue: 0.90)
-        case .work:
-            return Color(red: 0.50, green: 0.55, blue: 0.95)
-        case .explore:
-            return Color(red: 0.30, green: 0.80, blue: 0.55)
-        case .rest:
-            return Color(red: 0.48, green: 0.55, blue: 0.70)
-        case .admin:
-            return Color(red: 0.70, green: 0.70, blue: 0.75)
-        }
+        Theme.Color.Category.color(for: self)
+    }
+
+    /// Category color suitable for text on `Theme.Color.surface`.
+    /// Lightened for categories that fail 4.5:1 against surface (gig, explore).
+    var textOnSurface: Color {
+        Theme.Color.Category.onSurface(self)
     }
 }
