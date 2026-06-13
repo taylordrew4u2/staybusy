@@ -155,24 +155,6 @@ enum Theme {
     }
 }
 
-// MARK: - Stage-1 Backwards-Compatibility Shims
-//
-// Existing widget views still reference the old flat Theme API. Stage 2
-// refactors every view to use the nested namespaces; these shims must
-// be deleted then.
-
-extension Theme {
-    static let accent          = Color.accent
-    static let background      = Color.background
-    static let surface         = Color.surface
-    static let surfaceElevated = Color.surfaceElevated
-    static let textPrimary     = Color.textPrimary
-    static let textSecondary   = Color.textSecondary
-    static let textMuted       = Color.textTertiary
-    static let openBorder      = Color.openSlot
-    static let hourRule        = Color.hourRule
-}
-
 // MARK: - Hex Color Helper (private to this file)
 
 private extension Color {

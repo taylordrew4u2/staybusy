@@ -544,7 +544,7 @@ private struct FullScreenAttachmentView: View {
                 dismiss()
             } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(.title).weight(.heavy))
+                    .font(Theme.Font.titleLarge)
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(.white, .black.opacity(0.6))
                     .frame(width: Theme.Size.minTapTarget, height: Theme.Size.minTapTarget)

@@ -33,7 +33,7 @@ struct EmptyStateView: View {
     var body: some View {
         VStack(spacing: Theme.Spacing.m) {
             Image(systemName: symbol)
-                .font(.system(.largeTitle).weight(.heavy))
+                .font(Theme.Font.displayCountdown)
                 .foregroundStyle(Theme.Color.textSecondary)
             Text(title)
                 .font(Theme.Font.titleLarge)

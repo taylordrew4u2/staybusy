@@ -20,7 +20,7 @@ struct RemainingBlocksWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: RemainingBlocksProvider()) { entry in
             RemainingBlocksView(entry: entry)
-                .containerBackground(Theme.background, for: .widget)
+                .containerBackground(Theme.Color.background, for: .widget)
         }
         .configurationDisplayName("Remaining today")
         .description("Blocks left on your schedule today.")
@@ -176,39 +176,39 @@ struct RemainingBlocksView: View {
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
             Text("ALL DONE")
-                .font(.system(.caption2, design: .rounded).weight(.heavy))
+                .font(Theme.Font.caption)
                 .tracking(1.4)
-                .foregroundStyle(Theme.textSecondary)
+                .foregroundStyle(Theme.Color.textSecondary)
             Text("No more blocks today")
-                .font(.system(.headline, design: .rounded).weight(.heavy))
-                .foregroundStyle(Theme.textPrimary)
+                .font(Theme.Font.title)
+                .foregroundStyle(Theme.Color.textPrimary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var populated: some View {
         let displayed = Array(entry.blocks.prefix(4))
-        return VStack(alignment: .leading, spacing: 8) {
+        return VStack(alignment: .leading, spacing: Theme.Spacing.s) {
             Text("REMAINING TODAY")
-                .font(.system(.caption2, design: .rounded).weight(.heavy))
+                .font(Theme.Font.caption)
                 .tracking(1.3)
-                .foregroundStyle(Theme.textSecondary)
-            VStack(spacing: 6) {
+                .foregroundStyle(Theme.Color.textSecondary)
+            VStack(spacing: Theme.Spacing.xs) {
                 ForEach(displayed) { b in
-                    HStack(spacing: 10) {
+                    HStack(spacing: Theme.Spacing.s) {
                         RoundedRectangle(cornerRadius: 2)
                             .fill(b.category.color)
                             .frame(width: 3, height: 30)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(b.title)
-                                .font(.system(.subheadline, design: .rounded).weight(.heavy))
-                                .foregroundStyle(Theme.textPrimary)
+                                .font(Theme.Font.body)
+                                .foregroundStyle(Theme.Color.textPrimary)
                                 .lineLimit(1)
                             Text(timeRange(b))
-                                .font(.system(.caption, design: .rounded).weight(.semibold).monospacedDigit())
-                                .foregroundStyle(Theme.textSecondary)
+                                .font(Theme.Font.caption)
+                                .foregroundStyle(Theme.Color.textSecondary)
                         }
                         Spacer()
                     }

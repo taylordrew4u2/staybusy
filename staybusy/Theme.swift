@@ -215,28 +215,6 @@ enum Theme {
     }
 }
 
-// MARK: - Stage-1 Backwards-Compatibility Shims
-//
-// The old flat Theme API (`Theme.accent`, `Theme.background`, etc.) is
-// still referenced from existing views. Stage 1 leaves views untouched,
-// so we forward the old names to the new tokens. Stage 2 will refactor
-// every view to use the nested API (`Theme.Color.accent`, etc.) and
-// these shims must be deleted at that point.
-
-extension Theme {
-    static let accent          = Color.accent
-    static let background      = Color.background
-    static let surface         = Color.surface
-    static let surfaceElevated = Color.surfaceElevated
-    static let textPrimary     = Color.textPrimary
-    static let textSecondary   = Color.textSecondary
-    /// Old name for textTertiary. Remove in Stage 2.
-    static let textMuted       = Color.textTertiary
-    /// Old name for openSlot. Remove in Stage 2.
-    static let openBorder      = Color.openSlot
-    static let hourRule        = Color.hourRule
-}
-
 // MARK: - Hex Color Helper (private to this file)
 
 private extension Color {

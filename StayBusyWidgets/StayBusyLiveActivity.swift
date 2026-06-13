@@ -15,8 +15,8 @@ struct StayBusyLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: StayBusyActivityAttributes.self) { ctx in
             LockScreenLiveActivityView(state: ctx.state)
-                .padding(16)
-                .background(Theme.background)
+                .padding(Theme.Spacing.l)
+                .background(Theme.Color.background)
         } dynamicIsland: { ctx in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
@@ -37,7 +37,7 @@ struct StayBusyLiveActivity: Widget {
                 if let end = ctx.state.currentEnd {
                     Text(timerInterval: Date()...max(end, Date().addingTimeInterval(1)), countsDown: true)
                         .monospacedDigit()
-                        .foregroundStyle(Theme.accent)
+                        .foregroundStyle(Theme.Color.accent)
                         .frame(maxWidth: 64)
                 }
             } minimal: {
@@ -64,17 +64,17 @@ struct StayBusyLiveActivity: Widget {
     @ViewBuilder
     private func expandedLeading(state: StayBusyActivityAttributes.ContentState) -> some View {
         if let title = state.currentTitle, let cat = currentCategory(state) {
-            HStack(spacing: 8) {
+            HStack(spacing: Theme.Spacing.s) {
                 RoundedRectangle(cornerRadius: 3)
                     .fill(cat.color)
-                    .frame(width: 4, height: 36)
+                    .frame(width: Theme.Size.categoryStripeWidth, height: 36)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("NOW")
-                        .font(.system(.caption2, design: .rounded).weight(.heavy))
+                        .font(Theme.Font.caption)
                         .tracking(1.2)
                         .foregroundStyle(.secondary)
                     Text(title)
-                        .font(.system(.headline, design: .rounded).weight(.heavy))
+                        .font(Theme.Font.title)
                         .lineLimit(1)
                 }
             }
@@ -86,12 +86,12 @@ struct StayBusyLiveActivity: Widget {
         if let end = state.currentEnd {
             VStack(alignment: .trailing, spacing: 2) {
                 Text("ENDS IN")
-                    .font(.system(.caption2, design: .rounded).weight(.heavy))
+                    .font(Theme.Font.caption)
                     .tracking(1.2)
                     .foregroundStyle(.secondary)
                 Text(timerInterval: Date()...max(end, Date().addingTimeInterval(1)), countsDown: true)
-                    .font(.system(.title3, design: .rounded).weight(.heavy).monospacedDigit())
-                    .foregroundStyle(Theme.accent)
+                    .font(Theme.Font.titleLarge.monospacedDigit())
+                    .foregroundStyle(Theme.Color.accent)
                     .multilineTextAlignment(.trailing)
                     .frame(minWidth: 90, alignment: .trailing)
             }
@@ -101,19 +101,19 @@ struct StayBusyLiveActivity: Widget {
     @ViewBuilder
     private func expandedBottom(state: StayBusyActivityAttributes.ContentState) -> some View {
         if let title = state.nextTitle, let start = state.nextStart, let cat = nextCategory(state) {
-            HStack(spacing: 8) {
+            HStack(spacing: Theme.Spacing.s) {
                 Image(systemName: cat.symbol)
-                    .foregroundStyle(cat.color)
+                    .foregroundStyle(cat.textOnSurface)
                 Text("NEXT")
-                    .font(.system(.caption2, design: .rounded).weight(.heavy))
+                    .font(Theme.Font.caption)
                     .tracking(1.2)
                     .foregroundStyle(.secondary)
                 Text(title)
-                    .font(.system(.subheadline, design: .rounded).weight(.bold))
+                    .font(Theme.Font.body)
                     .lineLimit(1)
                 Spacer()
                 Text(start, style: .time)
-                    .font(.system(.subheadline, design: .rounded).weight(.semibold).monospacedDigit())
+                    .font(Theme.Font.caption)
                     .foregroundStyle(.secondary)
             }
         }
@@ -134,62 +134,62 @@ private struct LockScreenLiveActivityView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.m) {
             if let title = state.currentTitle,
                let end = state.currentEnd,
                let cat = currentCategory {
-                HStack(alignment: .center, spacing: 12) {
+                HStack(alignment: .center, spacing: Theme.Spacing.m) {
                     RoundedRectangle(cornerRadius: 4)
                         .fill(cat.color)
                         .frame(width: 5, height: 44)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("NOW")
-                            .font(.system(.caption2, design: .rounded).weight(.heavy))
+                            .font(Theme.Font.caption)
                             .tracking(1.4)
-                            .foregroundStyle(Theme.textSecondary)
+                            .foregroundStyle(Theme.Color.textSecondary)
                         Text(title)
-                            .font(.system(.title3, design: .rounded).weight(.heavy))
-                            .foregroundStyle(Theme.textPrimary)
+                            .font(Theme.Font.titleLarge)
+                            .foregroundStyle(Theme.Color.textPrimary)
                             .lineLimit(1)
                     }
-                    Spacer(minLength: 8)
+                    Spacer(minLength: Theme.Spacing.s)
                     VStack(alignment: .trailing, spacing: 2) {
                         Text("ENDS IN")
-                            .font(.system(.caption2, design: .rounded).weight(.heavy))
+                            .font(Theme.Font.caption)
                             .tracking(1.4)
-                            .foregroundStyle(Theme.textSecondary)
+                            .foregroundStyle(Theme.Color.textSecondary)
                         Text(timerInterval: Date()...max(end, Date().addingTimeInterval(1)), countsDown: true)
-                            .font(.system(.title3, design: .rounded).weight(.heavy).monospacedDigit())
-                            .foregroundStyle(Theme.accent)
+                            .font(Theme.Font.displayCountdown)
+                            .foregroundStyle(Theme.Color.accent)
                             .multilineTextAlignment(.trailing)
                             .frame(minWidth: 96, alignment: .trailing)
                     }
                 }
             } else {
                 Text("StayBusy")
-                    .font(.system(.headline, design: .rounded).weight(.heavy))
-                    .foregroundStyle(Theme.textPrimary)
+                    .font(Theme.Font.title)
+                    .foregroundStyle(Theme.Color.textPrimary)
             }
 
             if let nextTitle = state.nextTitle,
                let nextStart = state.nextStart,
                let nextCat = nextCategory {
-                HStack(spacing: 10) {
+                HStack(spacing: Theme.Spacing.s) {
                     Circle()
                         .fill(nextCat.color)
                         .frame(width: 8, height: 8)
                     Text("NEXT")
-                        .font(.system(.caption2, design: .rounded).weight(.heavy))
+                        .font(Theme.Font.caption)
                         .tracking(1.3)
-                        .foregroundStyle(Theme.textSecondary)
+                        .foregroundStyle(Theme.Color.textSecondary)
                     Text(nextTitle)
-                        .font(.system(.subheadline, design: .rounded).weight(.bold))
-                        .foregroundStyle(Theme.textPrimary)
+                        .font(Theme.Font.body)
+                        .foregroundStyle(Theme.Color.textPrimary)
                         .lineLimit(1)
-                    Spacer(minLength: 8)
+                    Spacer(minLength: Theme.Spacing.s)
                     Text(nextStart, style: .time)
-                        .font(.system(.subheadline, design: .rounded).weight(.semibold).monospacedDigit())
-                        .foregroundStyle(Theme.textSecondary)
+                        .font(Theme.Font.caption)
+                        .foregroundStyle(Theme.Color.textSecondary)
                 }
             }
         }

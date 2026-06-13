@@ -39,8 +39,8 @@ struct ContentView: View {
             .tag(TabSelection.trip)
         }
         .preferredColorScheme(.dark)
-        .tint(Theme.accent)
-        .toolbarBackground(Theme.background, for: .tabBar)
+        .tint(Theme.Color.accent)
+        .toolbarBackground(Theme.Color.background, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
     }
 }

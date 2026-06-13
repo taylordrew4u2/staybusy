@@ -394,7 +394,7 @@ private struct FloatingAddButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: "plus")
-                .font(.system(.title, design: .rounded).weight(.heavy))
+                .font(Theme.Font.titleLarge)
                 .foregroundStyle(.white)
                 .frame(width: 60, height: 60)
                 .background(Theme.Color.accent, in: Circle())
