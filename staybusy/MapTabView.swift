@@ -12,6 +12,7 @@ import CoreLocation
 
 struct MapTabView: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(sort: \Block.start, order: .forward) private var allBlocks: [Block]
 
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
@@ -34,31 +35,29 @@ struct MapTabView: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ZStack(alignment: .bottom) {
-                Theme.background.ignoresSafeArea()
+                Theme.Color.background.ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     DayPickerBar(selectedDate: $selectedDate)
                     ZStack(alignment: .topTrailing) {
                         mapView
                         polylineButton
-                            .padding(.top, 12)
-                            .padding(.trailing, 16)
+                            .padding(.top, Theme.Spacing.m)
+                            .padding(.trailing, Theme.Spacing.l)
                     }
                 }
 
                 if let selected = selectedBlock {
                     BottomCard(
                         block: selected,
-                        onDismiss: {
-                            withAnimation(.spring(response: 0.3)) { selectedBlock = nil }
-                        },
+                        onDismiss: dismissSelection,
                         onShowDetail: {
-                            withAnimation(.spring(response: 0.3)) { selectedBlock = nil }
+                            dismissSelection()
                             navigationPath.append(selected)
                         }
                     )
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 16)
+                    .padding(.horizontal, Theme.Spacing.l)
+                    .padding(.bottom, Theme.Spacing.l)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
@@ -70,7 +69,7 @@ struct MapTabView: View {
             }
         }
         .preferredColorScheme(.dark)
-        .tint(Theme.accent)
+        .tint(Theme.Color.accent)
         .sheet(item: $presentedSheet) { sheet in
             switch sheet {
             case .create(let interval):
@@ -83,8 +82,14 @@ struct MapTabView: View {
         }
         .onAppear { refitCamera() }
         .onChange(of: selectedDate) { _, _ in
-            withAnimation(.spring(response: 0.3)) { selectedBlock = nil }
+            dismissSelection()
             refitCamera()
+        }
+    }
+
+    private func dismissSelection() {
+        withAnimation(Theme.Motion.snap(reduceMotion: reduceMotion)) {
+            selectedBlock = nil
         }
     }
 
@@ -101,7 +106,7 @@ struct MapTabView: View {
                         isSelected: selectedBlock?.persistentModelID == pair.element.persistentModelID
                     )
                     .onTapGesture {
-                        withAnimation(.spring(response: 0.35)) {
+                        withAnimation(Theme.Motion.snap(reduceMotion: reduceMotion)) {
                             selectedBlock = pair.element
                         }
                     }
@@ -110,7 +115,7 @@ struct MapTabView: View {
 
             if showPolylines && indexed.count >= 2 {
                 MapPolyline(coordinates: indexed.map { coord($0.element) })
-                    .stroke(Theme.accent, lineWidth: 2)
+                    .stroke(Theme.Color.accent, lineWidth: 2)
             }
         }
         .mapStyle(.standard(elevation: .flat))
@@ -121,46 +126,52 @@ struct MapTabView: View {
         }
     }
 
+    @ViewBuilder
     private var emptyOverlay: some View {
-        VStack(spacing: 6) {
-            Image(systemName: "mappin.slash")
-                .font(.system(size: 24, weight: .heavy))
-                .foregroundStyle(Theme.textSecondary)
-            Text("No mapped blocks")
-                .font(.system(.subheadline, design: .rounded).weight(.heavy))
-                .foregroundStyle(Theme.textSecondary)
-            if blocksForDay.isEmpty {
-                Text("Nothing scheduled this day")
-                    .font(.system(.caption, design: .rounded).weight(.semibold))
-                    .foregroundStyle(Theme.textMuted)
-            } else {
-                Text("Add a location to a block to see it here")
-                    .font(.system(.caption, design: .rounded).weight(.semibold))
-                    .foregroundStyle(Theme.textMuted)
-            }
+        if blocksForDay.isEmpty {
+            EmptyStateView(
+                symbol: "mappin.slash",
+                title: "Nothing scheduled",
+                message: "Add a block to see it on the map.",
+                actionTitle: "Add a block",
+                action: { presentedSheet = .create(suggestedDefaultInterval()) }
+            )
+            .padding(Theme.Spacing.l)
+            .background(Theme.Color.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
+            .padding(Theme.Spacing.l)
+        } else {
+            EmptyStateView(
+                symbol: "mappin.slash",
+                title: "No locations yet",
+                message: "Add a location to one of today's blocks to see it here.",
+                actionTitle: "Add a block",
+                action: { presentedSheet = .create(suggestedDefaultInterval()) }
+            )
+            .padding(Theme.Spacing.l)
+            .background(Theme.Color.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
+            .padding(Theme.Spacing.l)
         }
-        .padding(20)
-        .background(Theme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 14))
-        .allowsHitTesting(false)
     }
 
     // MARK: - Polyline toggle
 
     private var polylineButton: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.25)) { showPolylines.toggle() }
+            withAnimation(Theme.Motion.snap(reduceMotion: reduceMotion)) {
+                showPolylines.toggle()
+            }
         } label: {
             Image(systemName: "point.3.connected.trianglepath.dotted")
-                .font(.system(size: 16, weight: .heavy))
-                .foregroundStyle(showPolylines ? Color.white : Theme.textPrimary)
-                .frame(width: 40, height: 40)
+                .font(Theme.Font.title)
+                .foregroundStyle(showPolylines ? Color.white : Theme.Color.textPrimary)
+                .frame(width: Theme.Size.minTapTarget, height: Theme.Size.minTapTarget)
                 .background(
-                    showPolylines ? Theme.accent : Theme.surfaceElevated.opacity(0.92),
+                    showPolylines ? Theme.Color.accent : Theme.Color.surfaceElevated.opacity(0.92),
                     in: Circle()
                 )
                 .shadow(color: .black.opacity(0.35), radius: 4, y: 2)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
         .accessibilityLabel(showPolylines ? "Hide route lines" : "Show route lines")
     }
 
@@ -168,6 +179,14 @@ struct MapTabView: View {
 
     private func coord(_ b: Block) -> CLLocationCoordinate2D {
         CLLocationCoordinate2D(latitude: b.latitude ?? 0, longitude: b.longitude ?? 0)
+    }
+
+    private func suggestedDefaultInterval() -> DateInterval {
+        let cal = Calendar.current
+        let base = cal.isDateInToday(selectedDate)
+            ? Date()
+            : (cal.date(bySettingHour: 9, minute: 0, second: 0, of: selectedDate) ?? selectedDate)
+        return DateInterval(start: base, duration: 3600)
     }
 
     private func refitCamera() {
@@ -187,7 +206,7 @@ struct MapTabView: View {
             center: center,
             span: MKCoordinateSpan(latitudeDelta: latDelta, longitudeDelta: lonDelta)
         )
-        withAnimation(.easeInOut(duration: 0.35)) {
+        withAnimation(Theme.Motion.gentle(reduceMotion: reduceMotion)) {
             cameraPosition = .region(region)
         }
     }
@@ -196,6 +215,7 @@ struct MapTabView: View {
 // MARK: - Numbered pin
 
 private struct NumberedPin: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let number: Int
     let color: Color
     let isSelected: Bool
@@ -208,10 +228,11 @@ private struct NumberedPin: View {
                 .overlay(Circle().stroke(Color.white, lineWidth: 2))
                 .shadow(color: .black.opacity(0.4), radius: 4, y: 2)
             Text("\(number)")
-                .font(.system(size: isSelected ? 18 : 14, weight: .heavy, design: .rounded).monospacedDigit())
+                .font(Theme.Font.body.monospacedDigit())
                 .foregroundStyle(Color.white)
         }
-        .animation(.spring(response: 0.3), value: isSelected)
+        .animation(Theme.Motion.snap(reduceMotion: reduceMotion), value: isSelected)
+        .accessibilityLabel("Block \(number)")
     }
 }
 
@@ -222,90 +243,38 @@ private struct BottomCard: View {
     let onDismiss: () -> Void
     let onShowDetail: () -> Void
 
+    private var coordinate: CLLocationCoordinate2D? {
+        guard let lat = block.latitude, let lng = block.longitude else { return nil }
+        return CLLocationCoordinate2D(latitude: lat, longitude: lng)
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(block.category.color)
-                    .frame(width: 4, height: 44)
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Image(systemName: block.category.symbol)
-                            .font(.system(size: 11, weight: .heavy))
-                            .foregroundStyle(block.category.color)
-                        Text(block.category.label.uppercased())
-                            .font(.system(.caption2, design: .rounded).weight(.heavy))
-                            .tracking(1.3)
-                            .foregroundStyle(Theme.textSecondary)
-                    }
-                    Text(block.title)
-                        .font(.system(.headline, design: .rounded).weight(.heavy))
-                        .foregroundStyle(Theme.textPrimary)
-                        .lineLimit(2)
-                    Text(timeRange)
-                        .font(.system(.caption, design: .rounded).weight(.semibold).monospacedDigit())
-                        .foregroundStyle(Theme.textSecondary)
-                    if !block.locationName.isEmpty {
-                        Text(block.locationName)
-                            .font(.system(.caption, design: .rounded).weight(.semibold))
-                            .foregroundStyle(Theme.textMuted)
-                            .lineLimit(1)
-                    }
-                }
-                Spacer()
+        VStack(alignment: .leading, spacing: Theme.Spacing.m) {
+            HStack(alignment: .top, spacing: Theme.Spacing.s) {
+                BlockCard(block: block, variant: .compact)
                 Button(action: onDismiss) {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(Theme.textMuted)
+                        .font(Theme.Font.title)
+                        .foregroundStyle(Theme.Color.textTertiary)
+                        .frame(width: Theme.Size.minTapTarget, height: Theme.Size.minTapTarget)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pressable)
+                .accessibilityLabel("Dismiss")
             }
 
-            HStack(spacing: 10) {
-                Button(action: openDrive) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "car.fill")
-                            .font(.system(size: 14, weight: .heavy))
-                        Text("Drive")
-                            .font(.system(.subheadline, design: .rounded).weight(.heavy))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Theme.accent, in: RoundedRectangle(cornerRadius: 10))
-                    .foregroundStyle(Color.white)
-                }
-                .buttonStyle(.plain)
-
-                Button(action: onShowDetail) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 14, weight: .heavy))
-                        Text("Details")
-                            .font(.system(.subheadline, design: .rounded).weight(.heavy))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Theme.surfaceElevated, in: RoundedRectangle(cornerRadius: 10))
-                    .foregroundStyle(Theme.textPrimary)
-                }
-                .buttonStyle(.plain)
+            if let coordinate {
+                DirectionsButtonRow(
+                    coordinate: coordinate,
+                    destinationName: block.locationName.isEmpty ? block.title : block.locationName,
+                    layout: .driveAndDetails(detailsAction: onShowDetail)
+                )
+            } else {
+                SecondaryButton(title: "Details", systemImage: "arrow.up.right", action: onShowDetail)
             }
         }
-        .padding(14)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
+        .padding(Theme.Spacing.m)
+        .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
         .shadow(color: .black.opacity(0.5), radius: 12, y: -4)
-    }
-
-    private func openDrive() {
-        guard let lat = block.latitude, let lng = block.longitude else { return }
-        let item = MKMapItem(placemark: MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng)))
-        item.name = block.locationName.isEmpty ? block.title : block.locationName
-        item.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
-    }
-
-    private var timeRange: String {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        return "\(f.string(from: block.start)) – \(f.string(from: block.end))"
     }
 }

@@ -12,47 +12,62 @@ struct TripTabView: View {
     @Query(sort: \Block.start, order: .forward) private var allBlocks: [Block]
     let onSelectDay: (Date) -> Void
 
+    @State private var presentedSheet: EditorSheet?
+
     var body: some View {
         let summary = TripSummary(blocks: allBlocks)
         ZStack {
-            Theme.background.ignoresSafeArea()
+            Theme.Color.background.ignoresSafeArea()
             if summary.days.isEmpty {
-                emptyState
+                EmptyStateView(
+                    symbol: "suitcase",
+                    title: "No trip scheduled",
+                    message: "Add a block to start mapping out your trip.",
+                    actionTitle: "Add a block",
+                    action: { presentedSheet = .create(suggestedInterval()) }
+                )
             } else {
                 ScrollView {
-                    VStack(spacing: 12) {
+                    VStack(spacing: Theme.Spacing.m) {
                         SummaryCard(summary: summary)
-                        VStack(spacing: 10) {
+                        VStack(spacing: Theme.Spacing.s) {
                             ForEach(summary.days) { day in
                                 Button {
                                     onSelectDay(day.date)
                                 } label: {
                                     DayRow(day: day)
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(.pressable)
+                                .accessibilityLabel(dayAccessibility(day))
+                                .accessibilityHint("Double tap to view that day's timeline")
                             }
                         }
                     }
-                    .padding(16)
+                    .padding(Theme.Spacing.l)
                 }
                 .scrollIndicators(.hidden)
             }
         }
         .preferredColorScheme(.dark)
+        .sheet(item: $presentedSheet) { sheet in
+            switch sheet {
+            case .create(let interval):
+                BlockEditorView(editing: nil, suggested: interval)
+            case .edit(let block):
+                BlockEditorView(editing: block, suggested: nil)
+            }
+        }
     }
 
-    private var emptyState: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "suitcase")
-                .font(.system(size: 44, weight: .heavy))
-                .foregroundStyle(Theme.textSecondary)
-            Text("No trip scheduled")
-                .font(.system(.title2, design: .rounded).weight(.heavy))
-                .foregroundStyle(Theme.textPrimary)
-            Text("Add a block to start a trip")
-                .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                .foregroundStyle(Theme.textSecondary)
-        }
+    private func suggestedInterval() -> DateInterval {
+        DateInterval(start: Date(), duration: 3600)
+    }
+
+    private func dayAccessibility(_ day: DaySummary) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE, MMMM d"
+        let blockCount = day.blocks.count
+        return "\(f.string(from: day.date)). \(blockCount) \(blockCount == 1 ? "block" : "blocks")."
     }
 }
 
@@ -136,7 +151,6 @@ private struct TripSummary {
                 if lhs.openMinutes != rhs.openMinutes {
                     return lhs.openMinutes < rhs.openMinutes
                 }
-                // Tiebreak: earliest date wins.
                 return lhs.date > rhs.date
             })
         } else {
@@ -151,41 +165,41 @@ private struct SummaryCard: View {
     let summary: TripSummary
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.m) {
             Text("TRIP OVERVIEW")
-                .font(.system(.caption2, design: .rounded).weight(.heavy))
+                .font(Theme.Font.caption)
                 .tracking(1.4)
-                .foregroundStyle(Theme.textSecondary)
-            HStack(alignment: .top, spacing: 28) {
+                .foregroundStyle(Theme.Color.textSecondary)
+            HStack(alignment: .top, spacing: Theme.Spacing.xl) {
                 stat(value: "\(summary.totalBlocks)", label: "BLOCKS")
                 stat(value: openHoursLabel, label: "OPEN")
                 Spacer(minLength: 0)
             }
             if let thin = summary.thinnestDay {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.xs) {
                     Text("Thinnest day:")
-                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                        .foregroundStyle(Theme.textSecondary)
+                        .font(Theme.Font.body)
+                        .foregroundStyle(Theme.Color.textSecondary)
                     Text(formatThinnest(thin.date))
-                        .font(.system(.subheadline, design: .rounded).weight(.heavy))
-                        .foregroundStyle(Theme.accent)
+                        .font(Theme.Font.body)
+                        .foregroundStyle(Theme.Color.accent)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(Theme.surfaceElevated, in: RoundedRectangle(cornerRadius: 14))
+        .padding(Theme.Spacing.l)
+        .background(Theme.Color.surfaceElevated, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
     }
 
     private func stat(value: String, label: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
-                .font(.system(.title, design: .rounded).weight(.heavy).monospacedDigit())
-                .foregroundStyle(Theme.textPrimary)
+                .font(Theme.Font.titleLarge.monospacedDigit())
+                .foregroundStyle(Theme.Color.textPrimary)
             Text(label)
-                .font(.system(.caption2, design: .rounded).weight(.heavy))
+                .font(Theme.Font.caption)
                 .tracking(1.2)
-                .foregroundStyle(Theme.textSecondary)
+                .foregroundStyle(Theme.Color.textSecondary)
         }
     }
 
@@ -211,27 +225,28 @@ private struct DayRow: View {
     let day: DaySummary
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+            HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s) {
                 Text(weekday)
-                    .font(.system(.title3, design: .rounded).weight(.heavy))
-                    .foregroundStyle(Theme.textPrimary)
+                    .font(Theme.Font.titleLarge)
+                    .foregroundStyle(Theme.Color.textPrimary)
                 Text(dateLabel)
-                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                    .foregroundStyle(Theme.textSecondary)
+                    .font(Theme.Font.body)
+                    .foregroundStyle(Theme.Color.textSecondary)
                 Spacer()
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .heavy))
-                    .foregroundStyle(Theme.textMuted)
+                    .font(Theme.Font.caption)
+                    .foregroundStyle(Theme.Color.textTertiary)
             }
             DensityBar(day: day)
                 .frame(height: 14)
             Text(countLine)
-                .font(.system(.caption, design: .rounded).weight(.semibold).monospacedDigit())
-                .foregroundStyle(Theme.textSecondary)
+                .font(Theme.Font.caption)
+                .foregroundStyle(Theme.Color.textSecondary)
         }
-        .padding(14)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
+        .padding(Theme.Spacing.m)
+        .frame(minHeight: Theme.Size.minTapTarget)
+        .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
     }
 
     private var weekday: String {
@@ -317,13 +332,14 @@ private struct DensityBar: View {
                 }
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 4))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small / 2))
+        .accessibilityHidden(true)
     }
 
     private func color(for seg: Segment) -> Color {
         switch seg.kind {
         case .block(let cat): return cat.color
-        case .open: return Theme.hourRule
+        case .open: return Theme.Color.hourRule
         }
     }
 }
