@@ -13,13 +13,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		BA782CBA2FDCDDEB00158A08 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = SB00000000000000000010 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = SB00000000000000000006;
-			remoteInfo = staybusy;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -129,7 +122,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				BA782CBB2FDCDDEB00158A08 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				BA0ED0AA2FDCBBD100D92071 /* StayBusyWidgets */,
@@ -233,11 +225,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		BA782CBB2FDCDDEB00158A08 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = SB00000000000000000006 /* staybusy */;
-			targetProxy = BA782CBA2FDCDDEB00158A08 /* PBXContainerItemProxy */;
-		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
