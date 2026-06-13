@@ -12,6 +12,16 @@
 		BA0ED0BA2FDCBBD300D92071 /* StayBusyWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BA0ED0A42FDCBBD100D92071 /* StayBusyWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		BA782CBA2FDCDDEB00158A08 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = SB00000000000000000010 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = SB00000000000000000006;
+			remoteInfo = staybusy;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXCopyFilesBuildPhase section */
 		BA0ED0BF2FDCBBD300D92071 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -31,6 +41,7 @@
 		BA0ED0A62FDCBBD100D92071 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		BA0ED0A82FDCBBD100D92071 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		BA0ED0D12FDCC42B00D92071 /* StayBusyWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StayBusyWidgetsExtension.entitlements; sourceTree = "<group>"; };
+		BAEFA1262FDCDBD50026391C /* StayBusyWidgetsExtensionDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StayBusyWidgetsExtensionDebug.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -87,6 +98,7 @@
 		SB00000000000000000003 = {
 			isa = PBXGroup;
 			children = (
+				BAEFA1262FDCDBD50026391C /* StayBusyWidgetsExtensionDebug.entitlements */,
 				BA0ED0D12FDCC42B00D92071 /* StayBusyWidgetsExtension.entitlements */,
 				SB00000000000000000001 /* staybusy */,
 				BA0ED0AA2FDCBBD100D92071 /* StayBusyWidgets */,
@@ -117,6 +129,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				BA782CBB2FDCDDEB00158A08 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				BA0ED0AA2FDCBBD100D92071 /* StayBusyWidgets */,
@@ -219,13 +232,21 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		BA782CBB2FDCDDEB00158A08 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = SB00000000000000000006 /* staybusy */;
+			targetProxy = BA782CBA2FDCDDEB00158A08 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
 		BA0ED0BC2FDCBBD300D92071 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = StayBusyWidgetsExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = StayBusyWidgetsExtensionDebug.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
