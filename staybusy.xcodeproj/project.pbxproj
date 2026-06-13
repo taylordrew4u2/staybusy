@@ -10,8 +10,6 @@
 		BA0ED0A72FDCBBD100D92071 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BA0ED0A62FDCBBD100D92071 /* WidgetKit.framework */; };
 		BA0ED0A92FDCBBD100D92071 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BA0ED0A82FDCBBD100D92071 /* SwiftUI.framework */; };
 		BA0ED0BA2FDCBBD300D92071 /* StayBusyWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BA0ED0A42FDCBBD100D92071 /* StayBusyWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		BA0ED1342FDCCD3A00D92071 /* File.txt in Resources */ = {isa = PBXBuildFile; fileRef = BA0ED1332FDCCD3A00D92071 /* File.txt */; };
-		BA0ED1352FDCCD7400D92071 /* File.txt in Resources */ = {isa = PBXBuildFile; fileRef = BA0ED1332FDCCD3A00D92071 /* File.txt */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -33,7 +31,6 @@
 		BA0ED0A62FDCBBD100D92071 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		BA0ED0A82FDCBBD100D92071 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		BA0ED0D12FDCC42B00D92071 /* StayBusyWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StayBusyWidgetsExtension.entitlements; sourceTree = "<group>"; };
-		BA0ED1322FDCCD3A00D92071 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text; name = Base; path = Base.lproj/File.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -95,7 +92,6 @@
 				BA0ED0AA2FDCBBD100D92071 /* StayBusyWidgets */,
 				BA0ED0A52FDCBBD100D92071 /* Frameworks */,
 				SB00000000000000000004 /* Products */,
-				BA0ED1332FDCCD3A00D92071 /* File.txt */,
 			);
 			sourceTree = "<group>";
 		};
@@ -194,7 +190,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BA0ED1342FDCCD3A00D92071 /* File.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -202,7 +197,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BA0ED1352FDCCD7400D92071 /* File.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -225,18 +219,6 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
-/* Begin PBXVariantGroup section */
-		BA0ED1332FDCCD3A00D92071 /* File.txt */ = {
-			isa = PBXVariantGroup;
-			children = (
-				BA0ED1322FDCCD3A00D92071 /* Base */,
-			);
-			name = File.txt;
-			path = ../../../../../../../../../Users/taylordrew/staybusy;
-			sourceTree = SDKROOT;
-		};
-/* End PBXVariantGroup section */
-
 /* Begin XCBuildConfiguration section */
 		BA0ED0BC2FDCBBD300D92071 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -246,7 +228,6 @@
 				CODE_SIGN_ENTITLEMENTS = StayBusyWidgetsExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = R44WG942GS;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = StayBusyWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = StayBusyWidgets;
@@ -278,7 +259,6 @@
 				CODE_SIGN_ENTITLEMENTS = StayBusyWidgetsExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = R44WG942GS;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = StayBusyWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = StayBusyWidgets;
@@ -338,6 +318,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = R44WG942GS;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -359,8 +340,10 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
+				NEW_SETTING = "";
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -402,6 +385,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = R44WG942GS;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -417,7 +401,9 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				NEW_SETTING = "";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -431,7 +417,6 @@
 				CODE_SIGN_ENTITLEMENTS = staybusy/staybusy.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = R44WG942GS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = staybusy/Info.plist;
@@ -465,7 +450,6 @@
 				CODE_SIGN_ENTITLEMENTS = staybusy/staybusy.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = R44WG942GS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = staybusy/Info.plist;
