@@ -10,6 +10,7 @@ import SwiftData
 
 struct TodayView: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(sort: \Block.start, order: .forward) private var allBlocks: [Block]
 
     @Binding var selectedDate: Date
@@ -37,32 +38,42 @@ struct TodayView: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ZStack(alignment: .bottomTrailing) {
-                Theme.background
+                Theme.Color.background
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     DayPickerBar(selectedDate: $selectedDate)
                     NowNextBar(allBlocks: allBlocks)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 8)
-                    TimelineScroll(
-                        date: selectedDate,
-                        blocks: blocksForSelectedDay,
-                        overlappingIDs: overlappingIDs,
-                        onTapOpen: { interval in
-                            presentedSheet = .create(interval)
-                        },
-                        onTapBlock: { block in
-                            navigationPath.append(block)
-                        }
-                    )
+                        .padding(.horizontal, Theme.Spacing.l)
+                        .padding(.bottom, Theme.Spacing.s)
+                    if blocksForSelectedDay.isEmpty {
+                        EmptyStateView(
+                            symbol: "calendar.badge.plus",
+                            title: "Nothing scheduled",
+                            message: "Add a block to start mapping out your day.",
+                            actionTitle: "Add a block",
+                            action: { presentedSheet = .create(suggestedDefaultInterval()) }
+                        )
+                        .frame(maxHeight: .infinity)
+                    } else {
+                        TimelineScroll(
+                            date: selectedDate,
+                            blocks: blocksForSelectedDay,
+                            overlappingIDs: overlappingIDs,
+                            onTapOpen: { interval in
+                                presentedSheet = .create(interval)
+                            },
+                            onTapBlock: { block in
+                                navigationPath.append(block)
+                            }
+                        )
+                    }
                 }
 
                 FloatingAddButton {
-                    let start = suggestedStartForCreate()
-                    presentedSheet = .create(DateInterval(start: start, duration: 3600))
+                    presentedSheet = .create(DateInterval(start: suggestedStartForCreate(), duration: 3600))
                 }
-                .padding(20)
+                .padding(Theme.Spacing.l)
             }
             .navigationDestination(for: Block.self) { block in
                 BlockDetailView(block: block) {
@@ -71,7 +82,7 @@ struct TodayView: View {
             }
         }
         .preferredColorScheme(.dark)
-        .tint(Theme.accent)
+        .tint(Theme.Color.accent)
         .sheet(item: $presentedSheet) { sheet in
             switch sheet {
             case .create(let interval):
@@ -88,6 +99,10 @@ struct TodayView: View {
         .onChange(of: allBlocks) { _, new in
             LiveActivityManager.shared.sync(blocks: new)
         }
+    }
+
+    private func suggestedDefaultInterval() -> DateInterval {
+        DateInterval(start: suggestedStartForCreate(), duration: 3600)
     }
 
     private func suggestedStartForCreate() -> Date {
@@ -134,170 +149,6 @@ enum EditorSheet: Identifiable {
     }
 }
 
-// MARK: - Now / Next pinned bar
-
-private struct NowNextBar: View {
-    let allBlocks: [Block]
-
-    var body: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { ctx in
-            let now = ctx.date
-            let current = allBlocks.first { $0.start <= now && now < $0.end }
-            let next = allBlocks
-                .filter { $0.start > now }
-                .sorted { $0.start < $1.start }
-                .first
-            content(now: now, current: current, next: next)
-                .task(id: snapshotKey(current: current, next: next)) {
-                    LiveActivityManager.shared.sync(blocks: allBlocks)
-                }
-        }
-        .padding(14)
-        .background(Theme.surfaceElevated, in: RoundedRectangle(cornerRadius: 16))
-    }
-
-    private func snapshotKey(current: Block?, next: Block?) -> String {
-        let c = current.map {
-            "\($0.persistentModelID.hashValue):\($0.title):\(Int($0.end.timeIntervalSince1970))"
-        } ?? "nil"
-        let n = next.map {
-            "\($0.persistentModelID.hashValue):\($0.title):\(Int($0.start.timeIntervalSince1970))"
-        } ?? "nil"
-        return "\(c)|\(n)"
-    }
-
-    @ViewBuilder
-    private func content(now: Date, current: Block?, next: Block?) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if let current {
-                primaryRow(
-                    color: current.category.color,
-                    symbol: current.category.symbol,
-                    eyebrow: "NOW",
-                    title: current.title,
-                    trailingLabel: "ENDS IN",
-                    trailing: countdown(from: now, to: current.end),
-                    trailingColor: Theme.textPrimary
-                )
-                if let next {
-                    Divider().background(Theme.textMuted.opacity(0.25))
-                    nextRow(next: next)
-                }
-            } else if let next {
-                primaryRow(
-                    color: Theme.textMuted,
-                    symbol: "clock",
-                    eyebrow: "FREE UNTIL",
-                    title: next.title,
-                    trailingLabel: "STARTS IN",
-                    trailing: countdown(from: now, to: next.start),
-                    trailingColor: Theme.accent
-                )
-                Divider().background(Theme.textMuted.opacity(0.25))
-                HStack(spacing: 8) {
-                    Circle().fill(next.category.color).frame(width: 8, height: 8)
-                    Text(next.category.label.uppercased())
-                        .font(.system(.caption2, design: .rounded).weight(.heavy))
-                        .tracking(1.3)
-                        .foregroundStyle(Theme.textSecondary)
-                    Spacer()
-                    Text(formatTime(next.start))
-                        .font(.system(.subheadline, design: .rounded).weight(.bold).monospacedDigit())
-                        .foregroundStyle(Theme.textSecondary)
-                }
-            } else {
-                HStack(spacing: 10) {
-                    Image(systemName: "checkmark.circle")
-                        .font(.system(size: 22, weight: .heavy))
-                        .foregroundStyle(Theme.textSecondary)
-                    Text("Nothing scheduled")
-                        .font(.system(.headline, design: .rounded).weight(.heavy))
-                        .foregroundStyle(Theme.textSecondary)
-                }
-            }
-        }
-    }
-
-    private func primaryRow(
-        color: Color,
-        symbol: String,
-        eyebrow: String,
-        title: String,
-        trailingLabel: String,
-        trailing: String,
-        trailingColor: Color
-    ) -> some View {
-        HStack(alignment: .center, spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(color.opacity(0.18))
-                    .frame(width: 44, height: 44)
-                Image(systemName: symbol)
-                    .font(.system(size: 19, weight: .heavy))
-                    .foregroundStyle(color)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(eyebrow)
-                    .font(.system(.caption2, design: .rounded).weight(.heavy))
-                    .tracking(1.5)
-                    .foregroundStyle(Theme.textSecondary)
-                Text(title)
-                    .font(.system(.title3, design: .rounded).weight(.heavy))
-                    .foregroundStyle(Theme.textPrimary)
-                    .lineLimit(1)
-            }
-            Spacer(minLength: 8)
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(trailingLabel)
-                    .font(.system(.caption2, design: .rounded).weight(.heavy))
-                    .tracking(1.5)
-                    .foregroundStyle(Theme.textSecondary)
-                Text(trailing)
-                    .font(.system(.title3, design: .rounded).weight(.heavy).monospacedDigit())
-                    .foregroundStyle(trailingColor)
-            }
-        }
-    }
-
-    private func nextRow(next: Block) -> some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(next.category.color)
-                .frame(width: 8, height: 8)
-            Text("NEXT")
-                .font(.system(.caption2, design: .rounded).weight(.heavy))
-                .tracking(1.5)
-                .foregroundStyle(Theme.textSecondary)
-            Text(next.title)
-                .font(.system(.subheadline, design: .rounded).weight(.bold))
-                .foregroundStyle(Theme.textPrimary)
-                .lineLimit(1)
-            Spacer(minLength: 8)
-            Text(formatTime(next.start))
-                .font(.system(.subheadline, design: .rounded).weight(.bold).monospacedDigit())
-                .foregroundStyle(Theme.textSecondary)
-        }
-    }
-
-    private func countdown(from: Date, to: Date) -> String {
-        let total = max(0, Int(to.timeIntervalSince(from)))
-        let h = total / 3600
-        let m = (total % 3600) / 60
-        let s = total % 60
-        if h > 0 {
-            return String(format: "%dh %02dm", h, m)
-        } else {
-            return String(format: "%dm %02ds", m, s)
-        }
-    }
-
-    private func formatTime(_ d: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        return f.string(from: d)
-    }
-}
-
 // MARK: - Timeline
 
 private enum TimelineItem: Identifiable {
@@ -329,6 +180,7 @@ private enum TimelineItem: Identifiable {
 }
 
 private struct TimelineScroll: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let date: Date
     let blocks: [Block]
     let overlappingIDs: Set<PersistentIdentifier>
@@ -422,13 +274,13 @@ private struct TimelineScroll: View {
                         }
                     }
                 }
-                .padding(.top, 8)
-                .padding(.bottom, 24)
+                .padding(.top, Theme.Spacing.s)
+                .padding(.bottom, Theme.Spacing.xl)
             }
             .onAppear {
                 guard isToday else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    withAnimation(.easeInOut(duration: 0.4)) {
+                    withAnimation(Theme.Motion.gentle(reduceMotion: reduceMotion)) {
                         proxy.scrollTo("nowLine", anchor: .center)
                     }
                 }
@@ -436,7 +288,7 @@ private struct TimelineScroll: View {
             .onChange(of: date) { _, _ in
                 guard isToday else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(.easeInOut(duration: 0.4)) {
+                    withAnimation(Theme.Motion.gentle(reduceMotion: reduceMotion)) {
                         proxy.scrollTo("nowLine", anchor: .center)
                     }
                 }
@@ -446,13 +298,13 @@ private struct TimelineScroll: View {
 
     private var hourRuler: some View {
         ForEach(startHour...endHour, id: \.self) { hour in
-            HStack(spacing: 6) {
+            HStack(spacing: Theme.Spacing.xs) {
                 Text(hourLabel(hour))
-                    .font(.system(.caption2, design: .rounded).weight(.bold).monospacedDigit())
-                    .foregroundStyle(Theme.textMuted)
+                    .font(Theme.Font.caption)
+                    .foregroundStyle(Theme.Color.textTertiary)
                     .frame(width: labelColumnWidth - 10, alignment: .trailing)
                 Rectangle()
-                    .fill(Theme.hourRule)
+                    .fill(Theme.Color.hourRule)
                     .frame(height: 1)
             }
             .padding(.trailing, rightPadding)
@@ -465,16 +317,23 @@ private struct TimelineScroll: View {
     private func cardView(for item: TimelineItem) -> some View {
         switch item {
         case .block(let b):
-            BlockCardView(
-                block: b,
-                hasOverlap: overlappingIDs.contains(b.persistentModelID)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 12))
-            .onTapGesture {
+            let now = Date()
+            let isCurrent = isToday && b.start <= now && now < b.end
+            let isPast = isToday && b.end <= now
+            Button {
                 onTapBlock(b)
+            } label: {
+                BlockCard(
+                    block: b,
+                    variant: .timeline,
+                    isCurrent: isCurrent,
+                    isPast: isPast,
+                    hasOverlap: overlappingIDs.contains(b.persistentModelID)
+                )
             }
+            .buttonStyle(.pressable)
         case .open(let s, let e):
-            OpenCardView(start: s, end: e) {
+            OpenSlotCard(start: s, end: e) {
                 onTapOpen(DateInterval(start: s, end: e))
             }
         }
@@ -497,121 +356,6 @@ private struct TimelineScroll: View {
     }
 }
 
-// MARK: - Cards
-
-private struct BlockCardView: View {
-    let block: Block
-    let hasOverlap: Bool
-
-    var body: some View {
-        HStack(spacing: 0) {
-            RoundedRectangle(cornerRadius: 3)
-                .fill(block.category.color)
-                .frame(width: 5)
-                .padding(.vertical, 6)
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Image(systemName: block.category.symbol)
-                        .font(.system(size: 11, weight: .heavy))
-                        .foregroundStyle(block.category.color)
-                    Text(block.category.label.uppercased())
-                        .font(.system(.caption2, design: .rounded).weight(.heavy))
-                        .tracking(1.2)
-                        .foregroundStyle(Theme.textSecondary)
-                    Spacer(minLength: 4)
-                    if hasOverlap {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 11, weight: .heavy))
-                            .foregroundStyle(Theme.accent)
-                            .accessibilityLabel("Overlaps with another block")
-                    }
-                }
-                Text(block.title)
-                    .font(.system(.headline, design: .rounded).weight(.heavy))
-                    .foregroundStyle(Theme.textPrimary)
-                    .lineLimit(2)
-                HStack(spacing: 6) {
-                    Text(timeRange)
-                        .font(.system(.caption, design: .rounded).weight(.semibold).monospacedDigit())
-                        .foregroundStyle(Theme.textSecondary)
-                    if !block.locationName.isEmpty {
-                        Text("·")
-                            .foregroundStyle(Theme.textMuted)
-                        Text(block.locationName)
-                            .font(.system(.caption, design: .rounded).weight(.semibold))
-                            .foregroundStyle(Theme.textSecondary)
-                            .lineLimit(1)
-                    }
-                }
-            }
-            .padding(.vertical, 10)
-            .padding(.horizontal, 12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .background(Theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-
-    private var timeRange: String {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        return "\(f.string(from: block.start)) – \(f.string(from: block.end))"
-    }
-}
-
-private struct OpenCardView: View {
-    let start: Date
-    let end: Date
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 10) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("OPEN — \(durationString)")
-                        .font(.system(.subheadline, design: .rounded).weight(.heavy))
-                        .tracking(0.8)
-                        .foregroundStyle(Theme.textMuted)
-                    Text(timeRange)
-                        .font(.system(.caption, design: .rounded).weight(.semibold).monospacedDigit())
-                        .foregroundStyle(Theme.textMuted.opacity(0.8))
-                }
-                Spacer(minLength: 8)
-                Image(systemName: "plus.circle")
-                    .font(.system(size: 17, weight: .heavy))
-                    .foregroundStyle(Theme.textMuted)
-            }
-            .padding(.vertical, 10)
-            .padding(.horizontal, 12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(
-                        Theme.openBorder,
-                        style: StrokeStyle(lineWidth: 1.2, dash: [5, 4])
-                    )
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var durationString: String {
-        let total = Int(end.timeIntervalSince(start) / 60)
-        let h = total / 60
-        let m = total % 60
-        if h > 0 && m > 0 { return "\(h)h \(m)m" }
-        if h > 0 { return "\(h)h" }
-        return "\(m)m"
-    }
-
-    private var timeRange: String {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        return "\(f.string(from: start)) – \(f.string(from: end))"
-    }
-}
-
 // MARK: - Now line
 
 private struct NowLineView: View {
@@ -621,23 +365,24 @@ private struct NowLineView: View {
     var body: some View {
         HStack(spacing: 0) {
             Text("NOW")
-                .font(.system(.caption2, design: .rounded).weight(.heavy))
+                .font(Theme.Font.caption)
                 .tracking(1.2)
                 .foregroundStyle(.white)
-                .padding(.horizontal, 7)
+                .padding(.horizontal, Theme.Spacing.s)
                 .padding(.vertical, 2)
-                .background(Theme.accent, in: Capsule())
+                .background(Theme.Color.accent, in: Capsule())
                 .frame(width: labelInset - 10, alignment: .trailing)
-                .padding(.trailing, 4)
+                .padding(.trailing, Theme.Spacing.xs)
             Circle()
-                .fill(Theme.accent)
+                .fill(Theme.Color.accent)
                 .frame(width: 9, height: 9)
             Rectangle()
-                .fill(Theme.accent)
+                .fill(Theme.Color.accent)
                 .frame(height: 2)
         }
         .padding(.trailing, rightInset)
         .frame(maxWidth: .infinity, alignment: .topLeading)
+        .accessibilityHidden(true)
     }
 }
 
@@ -649,13 +394,14 @@ private struct FloatingAddButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: "plus")
-                .font(.system(size: 26, weight: .heavy))
+                .font(.system(.title, design: .rounded).weight(.heavy))
                 .foregroundStyle(.white)
                 .frame(width: 60, height: 60)
-                .background(Theme.accent, in: Circle())
+                .background(Theme.Color.accent, in: Circle())
                 .shadow(color: .black.opacity(0.5), radius: 10, x: 0, y: 4)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
+        .accessibilityLabel("Add block")
     }
 }
 

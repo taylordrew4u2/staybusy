@@ -513,35 +513,6 @@ struct BlockEditorView: View {
 
 // MARK: - Chips
 
-private struct CategoryChip: View {
-    let category: BlockCategory
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: category.symbol)
-                    .font(.system(size: 12, weight: .heavy))
-                Text(category.label)
-                    .font(.system(.subheadline, design: .rounded).weight(.heavy))
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
-            .background(
-                isSelected ? category.color : Theme.surface,
-                in: Capsule()
-            )
-            .foregroundStyle(isSelected ? Color.white : Theme.textPrimary)
-            .overlay {
-                Capsule()
-                    .stroke(category.color.opacity(isSelected ? 0 : 0.55), lineWidth: 1.2)
-            }
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 private struct DurationChip: View {
     let minutes: Int
     let isSelected: Bool
