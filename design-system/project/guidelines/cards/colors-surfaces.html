@@ -1,0 +1,20 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Surfaces" subtitle="Near-black canvas with two stacked dark surfaces — no pure black" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  html,body{margin:0}
+  body{background:var(--sb-background);font-family:var(--sb-font-rounded);padding:20px;display:flex;gap:14px}
+  .sw{flex:1;border-radius:var(--sb-radius-medium);padding:14px;display:flex;flex-direction:column;justify-content:flex-end;min-height:108px;border:1px solid rgba(255,255,255,.05)}
+  .name{font-weight:800;font-size:14px;color:var(--sb-text-primary)}
+  .hex{font-family:var(--sb-font-mono);font-size:12px;color:var(--sb-text-tertiary);margin-top:3px}
+</style>
+</head>
+<body>
+  <div class="sw" style="background:var(--sb-background)"><div class="name">background</div><div class="hex">#0D0D0F</div></div>
+  <div class="sw" style="background:var(--sb-surface)"><div class="name">surface</div><div class="hex">#17171A</div></div>
+  <div class="sw" style="background:var(--sb-surface-elevated)"><div class="name">surfaceElevated</div><div class="hex">#1F1F24</div></div>
+</body>
+</html>

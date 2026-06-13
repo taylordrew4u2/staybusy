@@ -1,0 +1,25 @@
+<!-- @dsCard group="Spacing" viewport="700x150" name="Spacing scale" subtitle="Strict 4-pt scale — xs 4 to xxl 32. Nothing off-scale ships" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  html,body{margin:0}
+  body{background:var(--sb-background);font-family:var(--sb-font-rounded);padding:22px;display:flex;align-items:flex-end;gap:18px}
+  .col{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .bar{background:var(--sb-accent);border-radius:3px;width:100%}
+  .box{display:flex;align-items:flex-end;height:64px}
+  .n{font-weight:800;font-size:13px;color:var(--sb-text-primary)}
+  .px{font-family:var(--sb-font-mono);font-size:11px;color:var(--sb-text-tertiary)}
+</style>
+</head>
+<body>
+  <div class="col"><div class="box"><div class="bar" style="width:4px;height:4px"></div></div><span class="n">xs</span><span class="px">4</span></div>
+  <div class="col"><div class="box"><div class="bar" style="width:8px;height:8px"></div></div><span class="n">s</span><span class="px">8</span></div>
+  <div class="col"><div class="box"><div class="bar" style="width:12px;height:12px"></div></div><span class="n">m</span><span class="px">12</span></div>
+  <div class="col"><div class="box"><div class="bar" style="width:16px;height:16px"></div></div><span class="n">l</span><span class="px">16</span></div>
+  <div class="col"><div class="box"><div class="bar" style="width:24px;height:24px"></div></div><span class="n">xl</span><span class="px">24</span></div>
+  <div class="col"><div class="box"><div class="bar" style="width:32px;height:32px"></div></div><span class="n">xxl</span><span class="px">32</span></div>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!-- @dsCard group="StayBusy app" viewport="434x900" name="StayBusy — interactive app" subtitle="Today, Map and Trip tabs with live timeline, detail and editor" -->
+<!-- @startingPoint section="StayBusy" subtitle="Full ADHD-first schedule app — Today / Map / Trip" viewport="434x900" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StayBusy — App</title>
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<style>
+  html,body{margin:0;height:100%}
+  body{background:#050506;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;font-family:var(--sb-font-rounded)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="sb-data.js"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="sb-screens.jsx"></script>
+<script type="text/babel" src="sb-detail.jsx"></script>
+<script type="text/babel" data-presets="react">
+  (function () {
+    const Device = window.IOSDevice;
+    const StayBusyApp = window.SBApp;
+    const { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle, TweakColor } = window;
+
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "accent": "#E53935",
+      "density": 1.25,
+      "dimPast": true,
+      "cardRadius": 14
+    }/*EDITMODE-END*/;
+
+    function Root() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+      React.useEffect(() => {
+        const r = document.documentElement.style;
+        r.setProperty('--sb-accent', t.accent);
+        r.setProperty('--sb-accent-wash', `color-mix(in srgb, ${t.accent} 18%, transparent)`);
+        r.setProperty('--sb-glow-current', `0 4px 16px color-mix(in srgb, ${t.accent} 12%, transparent)`);
+        r.setProperty('--sb-opacity-past', t.dimPast ? '0.4' : '1');
+        r.setProperty('--sb-radius-medium', t.cardRadius + 'px');
+      }, [t]);
+
+      return (
+        <>
+          <Device dark>
+            <StayBusyApp tweaks={t} />
+          </Device>
+          <TweaksPanel title="Tweaks">
+            <TweakSection label="Theme" />
+            <TweakColor label="Accent" value={t.accent}
+                        options={['#E53935', '#F59E0A', '#428AF5', '#8C5CF5']}
+                        onChange={(v) => setTweak('accent', v)} />
+            <TweakSlider label="Card radius" value={t.cardRadius} min={6} max={22} step={1} unit="px"
+                         onChange={(v) => setTweak('cardRadius', v)} />
+            <TweakSection label="Timeline" />
+            <TweakSlider label="Density" value={t.density} min={0.8} max={2} step={0.05}
+                         onChange={(v) => setTweak('density', v)} />
+            <TweakToggle label="Dim past blocks" value={t.dimPast}
+                         onChange={(v) => setTweak('dimPast', v)} />
+          </TweaksPanel>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+  })();
+</script>
+</body>
+</html>
