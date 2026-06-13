@@ -45,6 +45,7 @@ struct BlockEditorView: View {
     @State private var addressSearch = AddressSearch()
     @State private var showMore: Bool = false
     @State private var didHydrate: Bool = false
+    @State private var showingDeleteConfirm: Bool = false
 
     @FocusState private var titleFocused: Bool
     @FocusState private var locationFocused: Bool
@@ -65,7 +66,7 @@ struct BlockEditorView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: Theme.Spacing.l) {
                     titleSection
                     categorySection
                     timeSection
@@ -73,35 +74,45 @@ struct BlockEditorView: View {
                     moreSection
                     if editing != nil { deleteButton }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 20)
+                .padding(.horizontal, Theme.Spacing.l)
+                .padding(.vertical, Theme.Spacing.xl)
             }
             .scrollDismissesKeyboard(.interactively)
-            .background(Theme.background)
+            .background(Theme.Color.background)
             .navigationTitle(editing == nil ? "New Block" : "Edit Block")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
-                        .foregroundStyle(Theme.textSecondary)
+                        .foregroundStyle(Theme.Color.textSecondary)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save", action: save)
-                        .font(.system(.body, design: .rounded).weight(.heavy))
-                        .foregroundStyle(canSave ? Theme.accent : Theme.textMuted)
+                        .font(Theme.Font.title)
+                        .foregroundStyle(canSave ? Theme.Color.accent : Theme.Color.textTertiary)
                         .disabled(!canSave)
                 }
             }
-            .toolbarBackground(Theme.background, for: .navigationBar)
+            .toolbarBackground(Theme.Color.background, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
         }
         .preferredColorScheme(.dark)
-        .tint(Theme.accent)
+        .tint(Theme.Color.accent)
         .onAppear(perform: hydrate)
         .onChange(of: locationQuery) { _, newValue in
             if locationFocused {
                 addressSearch.update(query: newValue)
             }
+        }
+        .confirmationDialog(
+            "Delete this block?",
+            isPresented: $showingDeleteConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive, action: delete)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This can't be undone.")
         }
     }
 
@@ -171,6 +182,7 @@ struct BlockEditorView: View {
             resultBlock = new
         }
         try? context.save()
+        Theme.Haptic.blockSaved()
         Task {
             if isCreate {
                 await NotificationManager.shared.blockCreated(resultBlock)
@@ -227,24 +239,24 @@ struct BlockEditorView: View {
     // MARK: - Sections
 
     private var titleSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
             sectionLabel("TITLE")
             TextField("e.g. Soundcheck", text: $title)
-                .font(.system(.title3, design: .rounded).weight(.heavy))
-                .foregroundStyle(Theme.textPrimary)
+                .font(Theme.Font.titleLarge)
+                .foregroundStyle(Theme.Color.textPrimary)
                 .focused($titleFocused)
                 .submitLabel(.done)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 14)
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, Theme.Spacing.m)
+                .padding(.vertical, Theme.Spacing.m)
+                .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
         }
     }
 
     private var categorySection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
             sectionLabel("CATEGORY")
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: Theme.Spacing.s) {
                     ForEach(BlockCategory.allCases) { c in
                         CategoryChip(category: c, isSelected: c == category) {
                             category = c
@@ -257,21 +269,21 @@ struct BlockEditorView: View {
     }
 
     private var timeSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
             sectionLabel("TIME")
-            VStack(spacing: 12) {
+            VStack(spacing: Theme.Spacing.m) {
                 timeRow("STARTS") {
                     DatePicker("", selection: $start, displayedComponents: .hourAndMinute)
                         .labelsHidden()
-                        .tint(Theme.accent)
+                        .tint(Theme.Color.accent)
                 }
                 timeRow("ENDS") {
                     DatePicker("", selection: $end, displayedComponents: .hourAndMinute)
                         .labelsHidden()
-                        .tint(Theme.accent)
+                        .tint(Theme.Color.accent)
                 }
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: Theme.Spacing.s) {
                         ForEach(durationOptions, id: \.self) { m in
                             DurationChip(minutes: m, isSelected: minutesBetween == m) {
                                 applyDuration(m)
@@ -281,46 +293,49 @@ struct BlockEditorView: View {
                     .padding(.horizontal, 2)
                 }
                 if !timeIsValid {
-                    HStack(spacing: 6) {
+                    HStack(spacing: Theme.Spacing.xs) {
                         Image(systemName: "exclamationmark.triangle.fill")
                         Text("End must be after start")
-                            .font(.system(.caption, design: .rounded).weight(.semibold))
+                            .font(Theme.Font.caption)
                     }
-                    .foregroundStyle(Theme.accent)
+                    .foregroundStyle(Theme.Color.warning)
                 }
             }
-            .padding(14)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+            .padding(Theme.Spacing.m)
+            .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
         }
     }
 
     private var locationSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
             sectionLabel("LOCATION (OPTIONAL)")
             VStack(spacing: 0) {
-                HStack(spacing: 10) {
+                HStack(spacing: Theme.Spacing.s) {
                     Image(systemName: "mappin.and.ellipse")
-                        .font(.system(size: 16, weight: .heavy))
-                        .foregroundStyle(Theme.textSecondary)
+                        .font(Theme.Font.title)
+                        .foregroundStyle(Theme.Color.textSecondary)
                     TextField("Search address or place", text: $locationQuery)
-                        .font(.system(.body, design: .rounded).weight(.semibold))
-                        .foregroundStyle(Theme.textPrimary)
+                        .font(Theme.Font.body)
+                        .foregroundStyle(Theme.Color.textPrimary)
                         .focused($locationFocused)
                         .textInputAutocapitalization(.words)
                         .autocorrectionDisabled()
                     if !locationQuery.isEmpty {
                         Button(action: clearLocation) {
                             Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(Theme.textMuted)
+                                .foregroundStyle(Theme.Color.textTertiary)
+                                .frame(width: Theme.Size.minTapTarget, height: Theme.Size.minTapTarget)
+                                .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.pressable)
+                        .accessibilityLabel("Clear location")
                     }
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 14)
+                .padding(.horizontal, Theme.Spacing.m)
+                .padding(.vertical, Theme.Spacing.s)
 
                 if locationFocused && !addressSearch.results.isEmpty {
-                    Divider().background(Theme.textMuted.opacity(0.2))
+                    Divider().background(Theme.Color.textTertiary.opacity(0.2))
                     ForEach(
                         Array(addressSearch.results.prefix(5).enumerated()),
                         id: \.offset
@@ -330,103 +345,107 @@ struct BlockEditorView: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(res.title)
-                                    .font(.system(.subheadline, design: .rounded).weight(.bold))
-                                    .foregroundStyle(Theme.textPrimary)
+                                    .font(Theme.Font.body)
+                                    .foregroundStyle(Theme.Color.textPrimary)
                                 if !res.subtitle.isEmpty {
                                     Text(res.subtitle)
-                                        .font(.system(.caption, design: .rounded).weight(.medium))
-                                        .foregroundStyle(Theme.textSecondary)
+                                        .font(Theme.Font.caption)
+                                        .foregroundStyle(Theme.Color.textSecondary)
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
+                            .padding(.horizontal, Theme.Spacing.m)
+                            .padding(.vertical, Theme.Spacing.s)
+                            .frame(minHeight: Theme.Size.minTapTarget)
+                            .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.pressable)
                     }
                 } else if !address.isEmpty && address != locationQuery {
-                    Divider().background(Theme.textMuted.opacity(0.2))
-                    HStack(spacing: 6) {
+                    Divider().background(Theme.Color.textTertiary.opacity(0.2))
+                    HStack(spacing: Theme.Spacing.xs) {
                         Image(systemName: "mappin.circle.fill")
-                            .foregroundStyle(Theme.textMuted)
+                            .foregroundStyle(Theme.Color.textTertiary)
                         Text(address)
-                            .font(.system(.caption, design: .rounded).weight(.medium))
-                            .foregroundStyle(Theme.textSecondary)
+                            .font(Theme.Font.caption)
+                            .foregroundStyle(Theme.Color.textSecondary)
                             .lineLimit(2)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
+                    .padding(.horizontal, Theme.Spacing.m)
+                    .padding(.vertical, Theme.Spacing.s)
                 }
             }
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+            .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
         }
     }
 
     private var moreSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s) {
             Button {
-                withAnimation(.spring(response: 0.3)) { showMore.toggle() }
+                withAnimation(Theme.Motion.snap()) { showMore.toggle() }
             } label: {
                 HStack {
                     sectionLabel("MORE")
                     Spacer()
                     Image(systemName: showMore ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 12, weight: .heavy))
-                        .foregroundStyle(Theme.textSecondary)
+                        .font(Theme.Font.caption)
+                        .foregroundStyle(Theme.Color.textSecondary)
                 }
+                .frame(minHeight: Theme.Size.minTapTarget)
+                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.pressable)
 
             if showMore {
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: Theme.Spacing.m) {
                     confirmationField
                     notesField
                     linksField
                 }
-                .padding(14)
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+                .padding(Theme.Spacing.m)
+                .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
             }
         }
     }
 
     private var confirmationField: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
             miniLabel("CONFIRMATION CODE")
             TextField("e.g. DL-AB12CD", text: $confirmationCode)
-                .font(.system(.body, design: .rounded).weight(.semibold).monospacedDigit())
-                .foregroundStyle(Theme.textPrimary)
+                .font(Theme.Font.body)
+                .foregroundStyle(Theme.Color.textPrimary)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.characters)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(Theme.surfaceElevated, in: RoundedRectangle(cornerRadius: 10))
+                .padding(.horizontal, Theme.Spacing.m)
+                .padding(.vertical, Theme.Spacing.s)
+                .background(Theme.Color.surfaceElevated, in: RoundedRectangle(cornerRadius: Theme.Radius.small))
         }
     }
 
     private var notesField: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
             miniLabel("NOTES")
             TextField("Add notes…", text: $notes, axis: .vertical)
                 .lineLimit(3...8)
-                .font(.system(.body, design: .rounded))
-                .foregroundStyle(Theme.textPrimary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(Theme.surfaceElevated, in: RoundedRectangle(cornerRadius: 10))
+                .font(Theme.Font.body)
+                .foregroundStyle(Theme.Color.textPrimary)
+                .padding(.horizontal, Theme.Spacing.m)
+                .padding(.vertical, Theme.Spacing.s)
+                .background(Theme.Color.surfaceElevated, in: RoundedRectangle(cornerRadius: Theme.Radius.small))
         }
     }
 
     private var linksField: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s) {
             miniLabel("LINKS")
             ForEach(Array(links.enumerated()), id: \.offset) { idx, link in
-                HStack(spacing: 8) {
+                HStack(spacing: Theme.Spacing.s) {
                     Image(systemName: "link")
-                        .foregroundStyle(Theme.textSecondary)
+                        .foregroundStyle(Theme.Color.textSecondary)
                     Text(link)
-                        .font(.system(.caption, design: .rounded).weight(.semibold))
-                        .foregroundStyle(Theme.textPrimary)
+                        .font(Theme.Font.caption)
+                        .foregroundStyle(Theme.Color.textPrimary)
                         .lineLimit(1)
                         .truncationMode(.middle)
                     Spacer()
@@ -434,76 +453,84 @@ struct BlockEditorView: View {
                         links.remove(at: idx)
                     } label: {
                         Image(systemName: "minus.circle.fill")
-                            .foregroundStyle(Theme.accent)
+                            .foregroundStyle(Theme.Color.warning)
+                            .frame(width: Theme.Size.minTapTarget, height: Theme.Size.minTapTarget)
+                            .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pressable)
+                    .accessibilityLabel("Remove link")
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Theme.surfaceElevated, in: RoundedRectangle(cornerRadius: 10))
+                .padding(.horizontal, Theme.Spacing.m)
+                .padding(.vertical, Theme.Spacing.xs)
+                .background(Theme.Color.surfaceElevated, in: RoundedRectangle(cornerRadius: Theme.Radius.small))
             }
-            HStack(spacing: 8) {
+            HStack(spacing: Theme.Spacing.s) {
                 TextField("https://", text: $newLink)
                     .keyboardType(.URL)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .submitLabel(.done)
                     .onSubmit { addLink() }
-                    .font(.system(.body, design: .rounded).weight(.semibold))
-                    .foregroundStyle(Theme.textPrimary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(Theme.surfaceElevated, in: RoundedRectangle(cornerRadius: 10))
+                    .font(Theme.Font.body)
+                    .foregroundStyle(Theme.Color.textPrimary)
+                    .padding(.horizontal, Theme.Spacing.m)
+                    .padding(.vertical, Theme.Spacing.s)
+                    .background(Theme.Color.surfaceElevated, in: RoundedRectangle(cornerRadius: Theme.Radius.small))
                 Button(action: addLink) {
                     let isEmpty = newLink.trimmingCharacters(in: .whitespaces).isEmpty
                     Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(Theme.accent.opacity(isEmpty ? 0.4 : 1))
+                        .font(Theme.Font.title)
+                        .foregroundStyle(Theme.Color.accent.opacity(isEmpty ? 0.4 : 1))
+                        .frame(width: Theme.Size.minTapTarget, height: Theme.Size.minTapTarget)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pressable)
                 .disabled(newLink.trimmingCharacters(in: .whitespaces).isEmpty)
+                .accessibilityLabel("Add link")
             }
         }
     }
 
     private var deleteButton: some View {
-        Button(role: .destructive, action: delete) {
-            HStack(spacing: 8) {
+        Button(role: .destructive) {
+            showingDeleteConfirm = true
+        } label: {
+            HStack(spacing: Theme.Spacing.s) {
                 Image(systemName: "trash.fill")
                 Text("Delete block")
-                    .font(.system(.headline, design: .rounded).weight(.heavy))
+                    .font(Theme.Font.title)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(Theme.accent.opacity(0.18), in: RoundedRectangle(cornerRadius: 12))
-            .foregroundStyle(Theme.accent)
+            .frame(maxWidth: .infinity, minHeight: Theme.Size.minTapTarget)
+            .padding(.vertical, Theme.Spacing.s)
+            .background(Theme.Color.accent.opacity(0.18), in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
+            .foregroundStyle(Theme.Color.accent)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
     }
 
     // MARK: - Helpers
 
     private func sectionLabel(_ text: String) -> some View {
         Text(text)
-            .font(.system(.caption2, design: .rounded).weight(.heavy))
+            .font(Theme.Font.caption)
             .tracking(1.4)
-            .foregroundStyle(Theme.textSecondary)
+            .foregroundStyle(Theme.Color.textSecondary)
     }
 
     private func miniLabel(_ text: String) -> some View {
         Text(text)
-            .font(.system(.caption2, design: .rounded).weight(.heavy))
+            .font(Theme.Font.caption)
             .tracking(1.2)
-            .foregroundStyle(Theme.textMuted)
+            .foregroundStyle(Theme.Color.textTertiary)
     }
 
     @ViewBuilder
     private func timeRow<Content: View>(_ text: String, @ViewBuilder content: () -> Content) -> some View {
         HStack {
             Text(text)
-                .font(.system(.caption, design: .rounded).weight(.heavy))
+                .font(Theme.Font.caption)
                 .tracking(1.0)
-                .foregroundStyle(Theme.textSecondary)
+                .foregroundStyle(Theme.Color.textSecondary)
                 .frame(width: 64, alignment: .leading)
             Spacer()
             content()
@@ -511,7 +538,7 @@ struct BlockEditorView: View {
     }
 }
 
-// MARK: - Chips
+// MARK: - Duration chip
 
 private struct DurationChip: View {
     let minutes: Int
@@ -521,16 +548,18 @@ private struct DurationChip: View {
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.system(.subheadline, design: .rounded).weight(.heavy).monospacedDigit())
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .font(Theme.Font.body.monospacedDigit())
+                .padding(.horizontal, Theme.Spacing.m)
+                .padding(.vertical, Theme.Spacing.s)
+                .frame(minHeight: Theme.Size.minTapTarget)
                 .background(
-                    isSelected ? Theme.accent : Theme.surfaceElevated,
+                    isSelected ? Theme.Color.accent : Theme.Color.surfaceElevated,
                     in: Capsule()
                 )
-                .foregroundStyle(isSelected ? Color.white : Theme.textPrimary)
+                .foregroundStyle(isSelected ? Color.white : Theme.Color.textPrimary)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     private var label: String {

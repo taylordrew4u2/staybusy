@@ -19,6 +19,8 @@ struct BlockDetailView: View {
     let block: Block
     let onEdit: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var attachmentURLs: [URL] = []
     @State private var photosSelection: [PhotosPickerItem] = []
     @State private var showPhotosPicker = false
@@ -35,7 +37,7 @@ struct BlockDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.l) {
                 if !attachmentURLs.isEmpty {
                     attachmentsCarousel
                 }
@@ -49,27 +51,31 @@ struct BlockDetailView: View {
                 infoSection
                 if let coord = blockCoordinate {
                     mapSection(coord)
-                    directionsButtons(coord)
+                    DirectionsButtonRow(
+                        coordinate: coord,
+                        destinationName: block.locationName.isEmpty ? "Destination" : block.locationName,
+                        layout: .stacked
+                    )
                     leaveBySection(coord)
                 }
             }
-            .padding(16)
+            .padding(Theme.Spacing.l)
         }
         .scrollIndicators(.hidden)
-        .background(Theme.background.ignoresSafeArea())
+        .background(Theme.Color.background.ignoresSafeArea())
         .navigationTitle(block.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Edit", action: onEdit)
-                    .foregroundStyle(Theme.accent)
-                    .font(.system(.body, design: .rounded).weight(.heavy))
+                    .foregroundStyle(Theme.Color.accent)
+                    .font(Theme.Font.title)
             }
         }
-        .toolbarBackground(Theme.background, for: .navigationBar)
+        .toolbarBackground(Theme.Color.background, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .preferredColorScheme(.dark)
-        .tint(Theme.accent)
+        .tint(Theme.Color.accent)
         .onAppear {
             attachmentURLs = AttachmentStore.urls(for: block.attachmentFilenames)
             if let coord = blockCoordinate {
@@ -132,13 +138,13 @@ struct BlockDetailView: View {
         .indexViewStyle(.page(backgroundDisplayMode: .interactive))
         .frame(height: 300)
         .background(Color.black)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.medium))
     }
 
     // MARK: - Ingestion buttons
 
     private var ingestionButtons: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: Theme.Spacing.s) {
             ingestButton("Camera", "camera.fill") { showCamera = true }
             ingestButton("Photos", "photo.on.rectangle") { showPhotosPicker = true }
             ingestButton("Files", "doc.fill") { showFilesPicker = true }
@@ -151,18 +157,19 @@ struct BlockDetailView: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            VStack(spacing: 6) {
+            VStack(spacing: Theme.Spacing.xs) {
                 Image(systemName: symbol)
-                    .font(.system(size: 18, weight: .heavy))
+                    .font(Theme.Font.title)
                 Text(title)
-                    .font(.system(.caption, design: .rounded).weight(.heavy))
+                    .font(Theme.Font.caption)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .foregroundStyle(Theme.textPrimary)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+            .frame(maxWidth: .infinity, minHeight: Theme.Size.minTapTarget)
+            .padding(.vertical, Theme.Spacing.m)
+            .foregroundStyle(Theme.Color.textPrimary)
+            .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
+        .accessibilityLabel(title)
     }
 
     private func importFromPhotos(_ items: [PhotosPickerItem]) async {
@@ -214,73 +221,76 @@ struct BlockDetailView: View {
     private var confirmationSection: some View {
         Button {
             UIPasteboard.general.string = block.confirmationCode
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            withAnimation(.spring(response: 0.25)) { copiedCode = true }
+            Theme.Haptic.codeCopied()
+            withAnimation(Theme.Motion.snap(reduceMotion: reduceMotion)) { copiedCode = true }
             Task {
                 try? await Task.sleep(nanoseconds: 1_500_000_000)
                 await MainActor.run {
-                    withAnimation(.spring(response: 0.25)) { copiedCode = false }
+                    withAnimation(Theme.Motion.snap(reduceMotion: reduceMotion)) { copiedCode = false }
                 }
             }
         } label: {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.s) {
                 HStack {
                     Text("CONFIRMATION CODE")
-                        .font(.system(.caption2, design: .rounded).weight(.heavy))
+                        .font(Theme.Font.caption)
                         .tracking(1.4)
-                        .foregroundStyle(Theme.textSecondary)
+                        .foregroundStyle(Theme.Color.textSecondary)
                     Spacer()
                     Text(copiedCode ? "COPIED" : "TAP TO COPY")
-                        .font(.system(.caption2, design: .rounded).weight(.heavy))
+                        .font(Theme.Font.caption)
                         .tracking(1.0)
-                        .foregroundStyle(copiedCode ? Color.white : Theme.accent)
-                        .padding(.horizontal, 8)
+                        .foregroundStyle(copiedCode ? Color.white : Theme.Color.accent)
+                        .padding(.horizontal, Theme.Spacing.s)
                         .padding(.vertical, 3)
                         .background(
-                            copiedCode ? Theme.accent : Theme.accent.opacity(0.18),
+                            copiedCode ? Theme.Color.accent : Theme.Color.accent.opacity(0.18),
                             in: Capsule()
                         )
                 }
                 Text(block.confirmationCode)
-                    .font(.system(size: 32, weight: .heavy, design: .monospaced))
-                    .foregroundStyle(Theme.textPrimary)
+                    .font(Theme.Font.codeHuge)
+                    .foregroundStyle(Theme.Color.textPrimary)
                     .minimumScaleFactor(0.55)
                     .lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(16)
+            .padding(Theme.Spacing.l)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
+            .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
+        .accessibilityLabel("Confirmation code \(block.confirmationCode)")
+        .accessibilityHint(copiedCode ? "Copied" : "Double tap to copy")
     }
 
     // MARK: - Links
 
     private var linksSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s) {
             sectionLabel("LINKS")
-            VStack(spacing: 8) {
+            VStack(spacing: Theme.Spacing.s) {
                 ForEach(Array(block.links.enumerated()), id: \.offset) { _, urlString in
                     if let url = makeURL(urlString) {
                         Link(destination: url) {
-                            HStack(spacing: 10) {
+                            HStack(spacing: Theme.Spacing.s) {
                                 Image(systemName: "safari.fill")
-                                    .foregroundStyle(Theme.accent)
-                                    .font(.system(size: 16, weight: .heavy))
+                                    .foregroundStyle(Theme.Color.accent)
+                                    .font(Theme.Font.title)
                                 Text(urlString)
-                                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                                    .foregroundStyle(Theme.textPrimary)
+                                    .font(Theme.Font.body)
+                                    .foregroundStyle(Theme.Color.textPrimary)
                                     .lineLimit(1)
                                     .truncationMode(.middle)
                                 Spacer()
                                 Image(systemName: "arrow.up.right")
-                                    .foregroundStyle(Theme.textSecondary)
-                                    .font(.system(size: 12, weight: .heavy))
+                                    .foregroundStyle(Theme.Color.textSecondary)
+                                    .font(Theme.Font.caption)
                             }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
-                            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+                            .padding(.horizontal, Theme.Spacing.m)
+                            .padding(.vertical, Theme.Spacing.m)
+                            .frame(minHeight: Theme.Size.minTapTarget)
+                            .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
                         }
                     }
                 }
@@ -298,48 +308,48 @@ struct BlockDetailView: View {
     // MARK: - Info
 
     private var infoSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.m) {
+            HStack(spacing: Theme.Spacing.s) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 8)
+                    RoundedRectangle(cornerRadius: Theme.Radius.small)
                         .fill(block.category.color.opacity(0.18))
                         .frame(width: 30, height: 30)
                     Image(systemName: block.category.symbol)
-                        .font(.system(size: 14, weight: .heavy))
-                        .foregroundStyle(block.category.color)
+                        .font(Theme.Font.caption)
+                        .foregroundStyle(block.category.textOnSurface)
                 }
                 Text(block.category.label.uppercased())
-                    .font(.system(.caption, design: .rounded).weight(.heavy))
+                    .font(Theme.Font.caption)
                     .tracking(1.3)
-                    .foregroundStyle(Theme.textSecondary)
+                    .foregroundStyle(Theme.Color.textSecondary)
             }
             Text(timeRangeString)
-                .font(.system(.title3, design: .rounded).weight(.heavy).monospacedDigit())
-                .foregroundStyle(Theme.textPrimary)
+                .font(Theme.Font.title.monospacedDigit())
+                .foregroundStyle(Theme.Color.textPrimary)
             if !block.locationName.isEmpty {
-                HStack(spacing: 6) {
+                HStack(spacing: Theme.Spacing.xs) {
                     Image(systemName: "mappin.and.ellipse")
-                        .foregroundStyle(Theme.textSecondary)
+                        .foregroundStyle(Theme.Color.textSecondary)
                     Text(block.locationName)
-                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                        .foregroundStyle(Theme.textSecondary)
+                        .font(Theme.Font.body)
+                        .foregroundStyle(Theme.Color.textSecondary)
                 }
             }
             if !block.address.isEmpty {
                 Text(block.address)
-                    .font(.system(.caption, design: .rounded).weight(.medium))
-                    .foregroundStyle(Theme.textMuted)
+                    .font(Theme.Font.caption)
+                    .foregroundStyle(Theme.Color.textTertiary)
             }
             if !block.notes.isEmpty {
                 Text(block.notes)
-                    .font(.system(.body, design: .rounded))
-                    .foregroundStyle(Theme.textPrimary)
-                    .padding(.top, 6)
+                    .font(Theme.Font.body)
+                    .foregroundStyle(Theme.Color.textPrimary)
+                    .padding(.top, Theme.Spacing.xs)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
+        .padding(Theme.Spacing.l)
+        .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
     }
 
     private var timeRangeString: String {
@@ -364,93 +374,23 @@ struct BlockDetailView: View {
                 block.locationName.isEmpty ? "Destination" : block.locationName,
                 coordinate: coord
             )
-            .tint(Theme.accent)
+            .tint(Theme.Color.accent)
         }
         .mapStyle(.standard(elevation: .flat))
         .frame(height: 180)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.medium))
         .allowsHitTesting(false)
-    }
-
-    // MARK: - Directions
-
-    private func directionsButtons(_ coord: CLLocationCoordinate2D) -> some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 10) {
-                directionsButton("Drive", "car.fill") {
-                    openAppleMaps(coord: coord, mode: MKLaunchOptionsDirectionsModeDriving)
-                }
-                directionsButton("Transit", "tram.fill") {
-                    openAppleMaps(coord: coord, mode: MKLaunchOptionsDirectionsModeTransit)
-                }
-            }
-            if googleMapsInstalled {
-                Button {
-                    openGoogleMaps(coord: coord)
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "g.circle.fill")
-                            .font(.system(size: 16, weight: .heavy))
-                        Text("Open in Google Maps")
-                            .font(.system(.subheadline, design: .rounded).weight(.heavy))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Theme.surfaceElevated, in: RoundedRectangle(cornerRadius: 12))
-                    .foregroundStyle(Theme.textPrimary)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    private func directionsButton(
-        _ title: String,
-        _ symbol: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: symbol)
-                    .font(.system(size: 18, weight: .heavy))
-                Text(title)
-                    .font(.system(.headline, design: .rounded).weight(.heavy))
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12))
-            .foregroundStyle(Color.white)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var googleMapsInstalled: Bool {
-        guard let url = URL(string: "comgooglemaps://") else { return false }
-        return UIApplication.shared.canOpenURL(url)
-    }
-
-    private func openAppleMaps(coord: CLLocationCoordinate2D, mode: String) {
-        let item = MKMapItem(placemark: MKPlacemark(coordinate: coord))
-        item.name = block.locationName.isEmpty ? "Destination" : block.locationName
-        item.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: mode])
-    }
-
-    private func openGoogleMaps(coord: CLLocationCoordinate2D) {
-        let s = "comgooglemaps://?daddr=\(coord.latitude),\(coord.longitude)&directionsmode=driving"
-        if let url = URL(string: s) {
-            UIApplication.shared.open(url)
-        }
     }
 
     // MARK: - Leave by
 
     private func leaveBySection(_ coord: CLLocationCoordinate2D) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
             sectionLabel("LEAVE BY")
             leaveByContent
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(14)
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12))
+                .padding(Theme.Spacing.m)
+                .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
         }
     }
 
@@ -458,47 +398,47 @@ struct BlockDetailView: View {
     private var leaveByContent: some View {
         switch leaveByModel.state {
         case .idle:
-            iconRow("location.fill", "Preparing…", iconTint: Theme.textSecondary)
+            iconRow("location.fill", "Preparing…", iconTint: Theme.Color.textSecondary)
         case .requestingPermission:
             iconRow(
                 "location.fill",
                 "Allow location to compute travel time",
-                iconTint: Theme.textSecondary
+                iconTint: Theme.Color.textSecondary
             )
         case .computing:
-            HStack(spacing: 10) {
+            HStack(spacing: Theme.Spacing.s) {
                 ProgressView()
-                    .tint(Theme.textSecondary)
+                    .tint(Theme.Color.textSecondary)
                 Text("Calculating ETA…")
-                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                    .foregroundStyle(Theme.textSecondary)
+                    .font(Theme.Font.body)
+                    .foregroundStyle(Theme.Color.textSecondary)
             }
         case .denied:
             iconRow(
                 "location.slash.fill",
                 "Enable location in Settings to see Leave by",
-                iconTint: Theme.textSecondary
+                iconTint: Theme.Color.textSecondary
             )
         case .ready(let leaveBy, let eta):
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Leave by \(formatTime(leaveBy))")
-                        .font(.system(.title2, design: .rounded).weight(.heavy).monospacedDigit())
-                        .foregroundStyle(Theme.textPrimary)
+                        .font(Theme.Font.titleLarge.monospacedDigit())
+                        .foregroundStyle(Theme.Color.textPrimary)
                     Text("\(formatDuration(eta)) drive · 10 min buffer")
-                        .font(.system(.caption, design: .rounded).weight(.semibold))
-                        .foregroundStyle(Theme.textSecondary)
+                        .font(Theme.Font.caption)
+                        .foregroundStyle(Theme.Color.textSecondary)
                 }
                 Spacer()
                 Image(systemName: "car.fill")
-                    .font(.system(size: 22, weight: .heavy))
-                    .foregroundStyle(Theme.accent)
+                    .font(Theme.Font.title)
+                    .foregroundStyle(Theme.Color.accent)
             }
         case .stale:
             iconRow(
                 "exclamationmark.triangle.fill",
                 "ETA unavailable — couldn't reach Apple Maps",
-                iconTint: Theme.accent
+                iconTint: Theme.Color.warning
             )
         }
     }
@@ -508,12 +448,12 @@ struct BlockDetailView: View {
         _ text: String,
         iconTint: Color
     ) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: Theme.Spacing.s) {
             Image(systemName: symbol)
                 .foregroundStyle(iconTint)
             Text(text)
-                .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                .foregroundStyle(Theme.textSecondary)
+                .font(Theme.Font.body)
+                .foregroundStyle(Theme.Color.textSecondary)
         }
     }
 
@@ -536,9 +476,9 @@ struct BlockDetailView: View {
 
     private func sectionLabel(_ text: String) -> some View {
         Text(text)
-            .font(.system(.caption2, design: .rounded).weight(.heavy))
+            .font(Theme.Font.caption)
             .tracking(1.4)
-            .foregroundStyle(Theme.textSecondary)
+            .foregroundStyle(Theme.Color.textSecondary)
     }
 }
 
@@ -580,6 +520,7 @@ private struct FullScreenAttachmentView: View {
     let initialIndex: Int
     @State private var index: Int
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(urls: [URL], initialIndex: Int) {
         self.urls = urls
@@ -603,11 +544,15 @@ private struct FullScreenAttachmentView: View {
                 dismiss()
             } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 32, weight: .heavy))
+                    .font(.system(.title).weight(.heavy))
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(.white, .black.opacity(0.6))
-                    .padding(20)
+                    .frame(width: Theme.Size.minTapTarget, height: Theme.Size.minTapTarget)
+                    .padding(Theme.Spacing.l)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.pressable)
+            .accessibilityLabel("Close")
         }
         .preferredColorScheme(.dark)
     }
@@ -620,6 +565,7 @@ private struct ZoomableAttachmentView: View {
     @State private var lastScale: CGFloat = 1
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -633,7 +579,7 @@ private struct ZoomableAttachmentView: View {
                     .gesture(zoomGesture)
                     .simultaneousGesture(panGesture)
                     .onTapGesture(count: 2) {
-                        withAnimation(.spring(response: 0.3)) { reset() }
+                        withAnimation(Theme.Motion.snap(reduceMotion: reduceMotion)) { reset() }
                     }
             } else {
                 ProgressView()
