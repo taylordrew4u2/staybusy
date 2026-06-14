@@ -1,0 +1,19 @@
+/* ============================================================
+   StayBusy — Elevation & effects
+   The app is flat and dark; shadows are used sparingly and only
+   for genuinely floating elements (the add button, map pins, the
+   map bottom card). No gradients anywhere — a hard rule.
+   ============================================================ */
+:root {
+  /* Floating Add button (lifts off the timeline) */
+  --sb-shadow-float:  0 4px 10px rgba(0, 0, 0, 0.5);
+  /* Map pins */
+  --sb-shadow-pin:    0 2px 4px rgba(0, 0, 0, 0.4);
+  /* Map bottom card (rises from screen edge — shadow casts upward) */
+  --sb-shadow-sheet:  0 -4px 12px rgba(0, 0, 0, 0.5);
+  /* Generic elevated popovers / toasts */
+  --sb-shadow-pop:    0 6px 20px rgba(0, 0, 0, 0.45);
+
+  /* Current-block accent glow (border does the work; glow is subtle) */
+  --sb-glow-current:  0 0 0 1px rgba(229, 57, 53, 0.0), 0 4px 16px rgba(229, 57, 53, 0.12);
+}

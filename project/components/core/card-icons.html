@@ -1,0 +1,77 @@
+<!-- @dsCard group="Components" viewport="700x440" name="Icon library" subtitle="Every glyph StayBusy uses (Phosphor / SF Symbols) with names — via the Icon component" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<style>
+  html,body{margin:0}
+  body{background:var(--sb-background);padding:20px;font-family:var(--sb-font-rounded)}
+  #root{display:flex;flex-direction:column;gap:18px}
+  .group-label{font-size:var(--sb-caption-size);letter-spacing:1.4px;text-transform:uppercase;color:var(--sb-text-secondary);margin-bottom:10px}
+  .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+  .cell{display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--sb-surface);border-radius:var(--sb-radius-small);padding:12px 6px}
+  .gl{font-size:24px}
+  .nm{font-family:var(--sb-font-mono);font-size:10px;color:var(--sb-text-tertiary);text-align:center;line-height:1.2;word-break:break-word}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+  const { Icon } = window.StayBusyDesignSystem_0220d6;
+
+  const GROUPS = [
+    { label: 'Categories', weight: 'fill', tint: true, items: [
+      ['microphone-stage','gig','--sb-cat-gig-text'], ['airplane-tilt','travel','--sb-cat-travel'],
+      ['fork-knife','food','--sb-cat-food'], ['users','social','--sb-cat-social'],
+      ['laptop','work','--sb-cat-work'], ['map-trifold','explore','--sb-cat-explore-text'],
+      ['moon-stars','rest','--sb-cat-rest'], ['tray','admin','--sb-cat-admin'],
+    ]},
+    { label: 'Tabs & navigation', weight: 'fill', items: [
+      ['calendar-blank','Today'], ['map-trifold','Map'], ['suitcase','Trip'],
+      ['caret-left','back','bold'], ['caret-right','next','bold'], ['x-circle','dismiss'],
+    ]},
+    { label: 'Actions', weight: 'bold', items: [
+      ['plus','add'], ['check','save'], ['path','route'], ['arrow-up-right','open'],
+      ['compass','link','fill'], ['copy','copy','fill'],
+    ]},
+    { label: 'Travel, status & attachments', weight: 'fill', items: [
+      ['car','drive'], ['tram','transit'], ['map-pin','location'], ['clock','free'],
+      ['check-circle','done','fill','--sb-success'], ['warning','overlap','fill','--sb-warning'],
+      ['camera','camera'], ['images','photos'], ['file','files'], ['calendar-plus','empty'],
+    ]},
+  ];
+
+  function Cell({ glyph, name, weight, color }) {
+    return (
+      <div className="cell">
+        <Icon name={glyph} weight={weight} size={24}
+              color={color ? `var(${color})` : 'var(--sb-text-primary)'} />
+        <span className="nm">{name}</span>
+      </div>
+    );
+  }
+
+  function Library() {
+    return GROUPS.map((g) => (
+      <div key={g.label}>
+        <div className="group-label">{g.label}</div>
+        <div className="grid">
+          {g.items.map((it, i) => g.tint
+            ? <Cell key={i} glyph={it[0]} name={it[1]} weight={g.weight} color={it[2]} />
+            : <Cell key={i} glyph={it[0]} name={it[1]} weight={it[2] || g.weight} color={it[3] || null} />
+          )}
+        </div>
+      </div>
+    ));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Library />);
+</script>
+</body>
+</html>

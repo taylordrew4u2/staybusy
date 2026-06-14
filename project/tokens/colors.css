@@ -1,0 +1,59 @@
+/* ============================================================
+   StayBusy — Color tokens
+   Dark mode only. Mirrors Theme.swift (the app's single source
+   of truth). Base values first, then semantic aliases.
+   ============================================================ */
+:root {
+  /* --- Base surfaces --------------------------------------- */
+  --sb-background:       #0D0D0F; /* near-black, NOT pure #000, so elevated surfaces read */
+  --sb-surface:         #17171A; /* cards */
+  --sb-surface-elevated:#1F1F24; /* sheets, Now/Next bar, map bottom card */
+
+  /* --- Brand ----------------------------------------------- */
+  --sb-accent:          #E53935; /* the one red — current block, CTAs, NOW */
+
+  /* --- Text ------------------------------------------------ */
+  --sb-text-primary:    #F5F5F7;
+  --sb-text-secondary:  #A1A1AA;
+  --sb-text-tertiary:   #6B6B73;
+
+  /* --- Structural ------------------------------------------ */
+  --sb-open-slot:       #3A3A41; /* dashed OPEN gap border */
+  --sb-hour-rule:       #383842; /* timeline hour lines, density "open" fill */
+
+  /* --- Semantic status ------------------------------------- */
+  --sb-warning:         #F5A623; /* overlap indicator */
+  --sb-success:         #34C759; /* confirmation / copy feedback */
+
+  /* --- Category (raw) — stripes, fills, icons, dots -------- */
+  --sb-cat-gig:         #E53935;
+  --sb-cat-travel:      #F59E0A;
+  --sb-cat-food:        #4CAF50;
+  --sb-cat-social:      #ED5999;
+  --sb-cat-work:        #428AF5;
+  --sb-cat-explore:     #8C5CF5;
+  --sb-cat-rest:        #738C99;
+  --sb-cat-admin:       #9E9E9E;
+
+  /* --- Category (on-surface) — text use only --------------
+     gig & explore fail 4.5:1 as raw text on --sb-surface, so
+     they get lightened variants. The rest pass and reuse raw. */
+  --sb-cat-gig-text:     #FF6B66; /* ~6.2:1 on surface */
+  --sb-cat-explore-text: #A98AF7; /* ~6.3:1 on surface */
+  --sb-cat-travel-text:  #F59E0A;
+  --sb-cat-food-text:    #4CAF50;
+  --sb-cat-social-text:  #ED5999;
+  --sb-cat-work-text:    #428AF5;
+  --sb-cat-rest-text:    #738C99;
+  --sb-cat-admin-text:   #9E9E9E;
+
+  /* --- Semantic aliases ------------------------------------ */
+  --sb-bg:              var(--sb-background);
+  --sb-card:            var(--sb-surface);
+  --sb-sheet:           var(--sb-surface-elevated);
+  --sb-border:          var(--sb-hour-rule);
+  --sb-divider:         rgba(107, 107, 115, 0.25); /* textTertiary @ 25% */
+  --sb-tint:            var(--sb-accent);
+  --sb-on-accent:       #FFFFFF;
+  --sb-accent-wash:     rgba(229, 57, 53, 0.18); /* icon tiles, NOW pill bg */
+}

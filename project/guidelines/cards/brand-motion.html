@@ -1,0 +1,27 @@
+<!-- @dsCard group="Brand" viewport="700x170" name="Motion" subtitle="Only two animations exist — snap for state, gentle for layout. Both honor Reduce Motion" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  html,body{margin:0}
+  body{background:var(--sb-background);font-family:var(--sb-font-rounded);padding:20px;display:flex;gap:16px}
+  .col{flex:1;background:var(--sb-surface);border-radius:var(--sb-radius-medium);padding:16px;display:flex;flex-direction:column;gap:12px}
+  .name{font-weight:800;font-size:16px;color:var(--sb-text-primary)}
+  .desc{font-size:13px;color:var(--sb-text-secondary);line-height:1.4}
+  .spec{font-family:var(--sb-font-mono);font-size:11px;color:var(--sb-text-tertiary);margin-top:auto}
+  .dot{width:24px;height:24px;border-radius:var(--sb-radius-small);background:var(--sb-accent)}
+  @media (prefers-reduced-motion: no-preference){
+    .snap{animation:snap 1.8s cubic-bezier(0.2,0.8,0.2,1) infinite}
+    .gentle{animation:gentle 2.6s cubic-bezier(0.4,0,0.2,1) infinite}
+  }
+  @keyframes snap{0%,55%{transform:scale(1)}65%{transform:scale(.85)}75%,100%{transform:scale(1)}}
+  @keyframes gentle{0%,15%{transform:translateX(0)}50%{transform:translateX(120px)}85%,100%{transform:translateX(0)}}
+</style>
+</head>
+<body>
+  <div class="col"><div class="name">snap</div><div class="dot snap"></div><div class="desc">Quick spring for state changes & presses.</div><div class="spec">~250ms · spring(.25,.85)</div></div>
+  <div class="col"><div class="name">gentle</div><div class="dot gentle"></div><div class="desc">Eased glide for scroll-to-now & layout shifts.</div><div class="spec">350ms · easeInOut</div></div>
+</body>
+</html>

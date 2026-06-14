@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StayBusy UI Kit — Dark Theme</title>
+  <link rel="stylesheet" href="tokens.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body.theme-dark {
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: var(--font-family-rounded);
+      font-size: var(--font-size-body);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin-bottom: 40px;
+    }
+
+    .section {
+      margin-bottom: 60px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--surface-elevated);
+      padding-bottom: 12px;
+    }
+
+    /* Component Showcase Grid */
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .component-card {
+      background: var(--surface);
+      border-radius: var(--radius-medium);
+      padding: 20px;
+      border: 1px solid var(--surface-elevated);
+    }
+
+    .component-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-tertiary);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Block Cards */
+    .block-card {
+      background: var(--surface-elevated);
+      border-left: var(--category-stripe-width) solid var(--cat-gig);
+      border-radius: var(--radius-medium);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .block-card.current {
+      border: var(--stroke-width-current) solid var(--accent);
+      box-shadow: 0 0 0 8px rgba(229, 57, 53, 0.1);
+    }
+
+    .block-card.past {
+      opacity: var(--opacity-past-block);
+    }
+
+    .block-card.open {
+      border-left: none;
+      border: var(--stroke-width-open) dashed var(--open-slot);
+      background: transparent;
+    }
+
+    .block-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .block-time {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-family: var(--font-family-mono);
+      margin-bottom: 8px;
+    }
+
+    .block-location {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    /* Buttons */
+    .button {
+      padding: 12px 24px;
+      border-radius: var(--radius-medium);
+      border: none;
+      font-family: var(--font-family-rounded);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-height: var(--min-tap-target);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .button:active {
+      opacity: var(--opacity-pressed);
+    }
+
+    .button-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .button-primary:hover {
+      opacity: 0.9;
+    }
+
+    .button-secondary {
+      background: var(--surface-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--text-tertiary);
+    }
+
+    .button-secondary:hover {
+      background: var(--surface);
+    }
+
+    .button-ghost {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+
+    /* Category Chips */
+    .chips-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      padding: 8px 16px;
+      border-radius: var(--radius-large);
+      border: 1px solid var(--text-tertiary);
+      background: transparent;
+      color: var(--text-primary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-height: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chip.selected {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .chip-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Now/Next Bar */
+    .now-bar {
+      background: var(--surface-elevated);
+      border-radius: var(--radius-medium);
+      padding: 16px;
+      border-left: var(--category-stripe-width) solid var(--cat-gig);
+      margin-bottom: 24px;
+    }
+
+    .now-bar-label {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .now-bar-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .now-bar-time {
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-family: var(--font-family-mono);
+    }
+
+    .countdown {
+      font-size: 32px;
+      font-weight: 700;
+      font-family: var(--font-family-mono);
+      color: var(--accent);
+      margin-top: 12px;
+    }
+
+    /* Input Field */
+    .input-field {
+      background: var(--surface-elevated);
+      border: 1px solid var(--text-tertiary);
+      border-radius: var(--radius-medium);
+      padding: 12px 16px;
+      color: var(--text-primary);
+      font-family: var(--font-family-rounded);
+      font-size: 16px;
+      min-height: var(--min-tap-target);
+      transition: all 0.2s;
+      width: 100%;
+      margin-bottom: 12px;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.1);
+    }
+
+    .input-field::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    /* Text Styles */
+    .text-display {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .text-title-large {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .text-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .text-body {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .text-caption {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      font-family: var(--font-family-mono);
+    }
+
+    /* Color Palette Grid */
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+    }
+
+    .color-swatch {
+      border-radius: var(--radius-medium);
+      padding: 16px;
+      text-align: center;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .color-name {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 12px;
+    }
+
+    .color-hex {
+      font-size: 11px;
+      font-family: var(--font-family-mono);
+      opacity: 0.7;
+    }
+
+    /* Layout Example */
+    .layout-example {
+      background: var(--surface);
+      border-radius: var(--radius-medium);
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .layout-section {
+      padding: 12px;
+      background: var(--surface-elevated);
+      border-radius: var(--radius-small);
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .showcase-grid {
+        grid-template-columns: 1fr;
+      }
+      .layout-example {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="theme-dark">
+  <div class="container">
+    <h1>📱 StayBusy iOS UI Kit</h1>
+    <p class="subtitle">Dark Theme — Complete component library for trip planning app</p>
+
+    <!-- Colors Section -->
+    <div class="section">
+      <h2 class="section-title">🎨 Color Palette</h2>
+      <div class="color-grid">
+        <div class="color-swatch" style="background: var(--bg);">
+          <div class="color-name">Background</div>
+          <div class="color-hex">#0D0D0F</div>
+        </div>
+        <div class="color-swatch" style="background: var(--surface);">
+          <div class="color-name">Surface</div>
+          <div class="color-hex">#17171A</div>
+        </div>
+        <div class="color-swatch" style="background: var(--surface-elevated);">
+          <div class="color-name">Surface Elevated</div>
+          <div class="color-hex">#1F1F24</div>
+        </div>
+        <div class="color-swatch" style="background: var(--accent);">
+          <div class="color-name" style="color: white;">Accent</div>
+          <div class="color-hex" style="color: white;">#E53935</div>
+        </div>
+        <div class="color-swatch" style="background: var(--success);">
+          <div class="color-name" style="color: #000;">Success</div>
+          <div class="color-hex" style="color: #000;">#34C759</div>
+        </div>
+        <div class="color-swatch" style="background: var(--warning);">
+          <div class="color-name" style="color: #000;">Warning</div>
+          <div class="color-hex" style="color: #000;">#F5A623</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Colors -->
+    <div class="section">
+      <h2 class="section-title">🏷️ Category Colors</h2>
+      <div class="color-grid">
+        <div class="color-swatch" style="background: var(--cat-gig);">
+          <div class="color-name" style="color: white;">Gig</div>
+          <div class="color-hex" style="color: white;">#E53935</div>
+        </div>
+        <div class="color-swatch" style="background: var(--cat-travel);">
+          <div class="color-name" style="color: #000;">Travel</div>
+          <div class="color-hex" style="color: #000;">#F59E0A</div>
+        </div>
+        <div class="color-swatch" style="background: var(--cat-food);">
+          <div class="color-name" style="color: white;">Food</div>
+          <div class="color-hex" style="color: white;">#4CAF50</div>
+        </div>
+        <div class="color-swatch" style="background: var(--cat-social);">
+          <div class="color-name" style="color: white;">Social</div>
+          <div class="color-hex" style="color: white;">#ED5999</div>
+        </div>
+        <div class="color-swatch" style="background: var(--cat-work);">
+          <div class="color-name" style="color: white;">Work</div>
+          <div class="color-hex" style="color: white;">#428AF5</div>
+        </div>
+        <div class="color-swatch" style="background: var(--cat-explore);">
+          <div class="color-name" style="color: white;">Explore</div>
+          <div class="color-hex" style="color: white;">#8C5CF5</div>
+        </div>
+        <div class="color-swatch" style="background: var(--cat-rest);">
+          <div class="color-name" style="color: white;">Rest</div>
+          <div class="color-hex" style="color: white;">#738C99</div>
+        </div>
+        <div class="color-swatch" style="background: var(--cat-admin);">
+          <div class="color-name" style="color: white;">Admin</div>
+          <div class="color-hex" style="color: white;">#9E9E9E</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Typography -->
+    <div class="section">
+      <h2 class="section-title">✍️ Typography</h2>
+      <div class="component-card">
+        <div class="text-display">Display (32px, Heavy)</div>
+        <div class="text-title-large">Title Large (22px, Heavy)</div>
+        <div class="text-title">Title (18px, Bold)</div>
+        <div class="text-body">Body (16px, Medium)</div>
+        <div class="text-caption">CAPTION (12px, Medium, Monospaced)</div>
+      </div>
+    </div>
+
+    <!-- Block Cards -->
+    <div class="section">
+      <h2 class="section-title">🎯 Block Cards</h2>
+      <div class="component-card">
+        <div class="component-name">Default Block</div>
+        <div class="block-card">
+          <div class="block-title">Coffee Meeting</div>
+          <div class="block-time">09:00 AM — 10:00 AM</div>
+          <div class="block-location">Café Downtown</div>
+        </div>
+
+        <div class="component-name" style="margin-top: 20px;">Current Block (Active)</div>
+        <div class="block-card current">
+          <div class="block-title">Lunch with Sarah</div>
+          <div class="block-time">12:30 PM — 1:30 PM</div>
+          <div class="block-location">Italian Restaurant</div>
+        </div>
+
+        <div class="component-name" style="margin-top: 20px;">Past Block (Disabled)</div>
+        <div class="block-card past">
+          <div class="block-title">Morning Workout</div>
+          <div class="block-time">06:00 AM — 7:00 AM</div>
+          <div class="block-location">Gym</div>
+        </div>
+
+        <div class="component-name" style="margin-top: 20px;">Open Time Slot</div>
+        <div class="block-card open">
+          <div class="block-title">OPEN — 2h 30m</div>
+          <div class="block-time">3:00 PM — 5:30 PM</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Now/Next Bar -->
+    <div class="section">
+      <h2 class="section-title">⏱️ Now/Next Bar</h2>
+      <div class="component-card">
+        <div class="now-bar">
+          <div class="now-bar-label">Now</div>
+          <div class="now-bar-title">Exploring the Beach</div>
+          <div class="now-bar-time">02:00 PM — 05:00 PM</div>
+          <div class="countdown">1h 45m</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="section">
+      <h2 class="section-title">🔘 Buttons</h2>
+      <div class="component-card">
+        <div class="component-name">Primary Button</div>
+        <button class="button button-primary">Add Block</button>
+
+        <div class="component-name" style="margin-top: 16px;">Secondary Button</div>
+        <button class="button button-secondary">Cancel</button>
+
+        <div class="component-name" style="margin-top: 16px;">Ghost Button</div>
+        <button class="button button-ghost">Learn More</button>
+
+        <div class="component-name" style="margin-top: 16px;">Multiple Buttons</div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <button class="button button-primary">Save</button>
+          <button class="button button-secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Chips -->
+    <div class="section">
+      <h2 class="section-title">🏷️ Category Chips</h2>
+      <div class="component-card">
+        <div class="component-name">Unselected</div>
+        <div class="chips-row">
+          <button class="chip"><span class="chip-color" style="background: var(--cat-gig);"></span>Gig</button>
+          <button class="chip"><span class="chip-color" style="background: var(--cat-travel);"></span>Travel</button>
+          <button class="chip"><span class="chip-color" style="background: var(--cat-food);"></span>Food</button>
+          <button class="chip"><span class="chip-color" style="background: var(--cat-social);"></span>Social</button>
+        </div>
+
+        <div class="component-name" style="margin-top: 16px;">Selected</div>
+        <div class="chips-row">
+          <button class="chip selected"><span class="chip-color" style="background: white;"></span>Work</button>
+          <button class="chip"><span class="chip-color" style="background: var(--cat-explore);"></span>Explore</button>
+          <button class="chip"><span class="chip-color" style="background: var(--cat-rest);"></span>Rest</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Fields -->
+    <div class="section">
+      <h2 class="section-title">📝 Input Fields</h2>
+      <div class="component-card">
+        <input type="text" class="input-field" placeholder="Block title (e.g., Coffee with Alex)">
+        <input type="text" class="input-field" placeholder="Location (optional)">
+        <input type="time" class="input-field" value="14:30">
+      </div>
+    </div>
+
+    <!-- Spacing & Radius -->
+    <div class="section">
+      <h2 class="section-title">📐 Spacing & Radius</h2>
+      <div class="component-card">
+        <div class="component-name">Spacing Scale (4pt base)</div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
+          <div style="padding: 8px 12px; background: var(--surface-elevated); border-radius: 6px; font-size: 11px;">xs: 4px</div>
+          <div style="padding: 8px 12px; background: var(--surface-elevated); border-radius: 6px; font-size: 11px;">s: 8px</div>
+          <div style="padding: 8px 12px; background: var(--surface-elevated); border-radius: 6px; font-size: 11px;">m: 12px</div>
+          <div style="padding: 8px 12px; background: var(--surface-elevated); border-radius: 6px; font-size: 11px;">l: 16px</div>
+          <div style="padding: 8px 12px; background: var(--surface-elevated); border-radius: 6px; font-size: 11px;">xl: 24px</div>
+          <div style="padding: 8px 12px; background: var(--surface-elevated); border-radius: 6px; font-size: 11px;">xxl: 32px</div>
+        </div>
+
+        <div class="component-name">Corner Radius</div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <div style="width: 80px; height: 80px; background: var(--accent); border-radius: 8px;"></div>
+          <div style="width: 80px; height: 80px; background: var(--accent); border-radius: 14px;"></div>
+          <div style="width: 80px; height: 80px; background: var(--accent); border-radius: 22px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Message -->
+    <div class="section" style="border-top: 1px solid var(--surface-elevated); padding-top: 40px;">
+      <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 12px;">
+        <strong>Dark Theme Features:</strong><br>
+        ✓ Optimized for low-light environments<br>
+        ✓ Reduced eye strain with warm accent (coral-red #E53935)<br>
+        ✓ Perfect contrast ratios (4.5:1+) for accessibility<br>
+        ✓ 8 category colors with semantic meaning<br>
+        ✓ Clear visual hierarchy with 3 text levels<br>
+        ✓ Comfortable interaction with 44px minimum tap targets
+      </p>
+    </div>
+  </div>
+</body>
+</html>

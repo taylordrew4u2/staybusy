@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StayBusy App Icon Generator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f5;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+      color: #222;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .icon-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+    .icon-container {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      border: 1px solid #eee;
+    }
+    .icon-name {
+      font-weight: 700;
+      color: #222;
+      margin-bottom: 8px;
+    }
+    .icon-desc {
+      font-size: 12px;
+      color: #999;
+    }
+    .download-btn {
+      background: #0D0D0F;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      margin-top: 12px;
+      transition: opacity 0.2s;
+    }
+    .download-btn:hover {
+      opacity: 0.8;
+    }
+    .download-btn.warm {
+      background: #FF6B35;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 StayBusy App Icons (1024×1024)</h1>
+    <p class="subtitle">High-resolution icons for app stores and home screens</p>
+    
+    <h2 style="font-size: 18px; margin-bottom: 20px; color: #333;">App Icon (Dark Theme)</h2>
+    <div class="icon-grid">
+      <div class="icon-container">
+        <canvas id="appIconDark"></canvas>
+        <div class="icon-name">StayBusy App Icon</div>
+        <div class="icon-desc">1024×1024 · Dark Theme</div>
+        <button class="download-btn" onclick="downloadIcon('appIconDark', 'staybusy-dark-icon.png')">Download PNG</button>
+        <button class="download-btn" onclick="downloadIcon('appIconDark', 'staybusy-dark-icon.jpg')" style="background: #555;">Download JPG</button>
+      </div>
+    </div>
+
+    <h2 style="font-size: 18px; margin-bottom: 20px; color: #333;">App Icon (Warm Theme)</h2>
+    <div class="icon-grid">
+      <div class="icon-container">
+        <canvas id="appIconWarm"></canvas>
+        <div class="icon-name">StayBusy App Icon</div>
+        <div class="icon-desc">1024×1024 · Warm Theme</div>
+        <button class="download-btn warm" onclick="downloadIcon('appIconWarm', 'staybusy-warm-icon.png')">Download PNG</button>
+        <button class="download-btn" style="background: #FF9800;" onclick="downloadIcon('appIconWarm', 'staybusy-warm-icon.jpg')">Download JPG</button>
+      </div>
+    </div>
+
+    <h2 style="font-size: 18px; margin-bottom: 20px; margin-top: 40px; color: #333;">Recommended Sizes</h2>
+    <div style="background: white; padding: 20px; border-radius: 12px; color: #555; line-height: 1.8;">
+      <strong>iOS App Icon</strong><br>
+      • 1024×1024 (App Store)<br>
+      • 180×180 (iPhone 6s Plus, 7 Plus, 8 Plus)<br>
+      • 167×167 (iPad Pro)<br>
+      • 152×152 (iPad, iPad mini)<br>
+      <br>
+      <strong>Android App Icon</strong><br>
+      • 512×512 (Google Play Store)<br>
+      • 192×192 (mdpi)<br>
+      • 144×144 (hdpi)<br>
+      <br>
+      <strong>Web</strong><br>
+      • 180×180 (Web app favicon)<br>
+      • 192×192 (PWA)<br>
+    </div>
+  </div>
+
+  <script>
+    function drawAppIconDark() {
+      const canvas = document.getElementById('appIconDark');
+      canvas.width = 1024;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+      
+      // Premium gradient background
+      const bgGradient = ctx.createLinearGradient(0, 0, 1024, 1024);
+      bgGradient.addColorStop(0, '#1A1A1D');
+      bgGradient.addColorStop(0.5, '#0D0D0F');
+      bgGradient.addColorStop(1, '#0A0A0C');
+      ctx.fillStyle = bgGradient;
+      ctx.fillRect(0, 0, 1024, 1024);
+      
+      // Rounded corners with antialiasing
+      ctx.clearRect(0, 0, 128, 128);
+      ctx.clearRect(896, 0, 128, 128);
+      ctx.clearRect(0, 896, 128, 128);
+      ctx.clearRect(896, 896, 128, 128);
+      
+      const r = 128;
+      ctx.fillStyle = bgGradient;
+      ctx.beginPath();
+      ctx.moveTo(r, 0);
+      ctx.lineTo(1024 - r, 0);
+      ctx.arcTo(1024, 0, 1024, r, r);
+      ctx.lineTo(1024, 1024 - r);
+      ctx.arcTo(1024, 1024, 1024 - r, 1024, r);
+      ctx.lineTo(r, 1024);
+      ctx.arcTo(0, 1024, 0, 1024 - r, r);
+      ctx.lineTo(0, r);
+      ctx.arcTo(0, 0, r, 0, r);
+      ctx.fill();
+      
+      // Subtle noise overlay for sophistication
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+      for (let i = 0; i < 50; i++) {
+        ctx.fillRect(Math.random() * 1024, Math.random() * 1024, Math.random() * 4, Math.random() * 4);
+      }
+      
+      // Accent gradient from top-left
+      const accentGradient = ctx.createLinearGradient(0, 0, 600, 600);
+      accentGradient.addColorStop(0, 'rgba(229, 57, 53, 0.25)');
+      accentGradient.addColorStop(1, 'rgba(229, 57, 53, 0)');
+      ctx.fillStyle = accentGradient;
+      ctx.fillRect(0, 0, 1024, 1024);
+      
+      // Premium time block layout (staggered, overlapping)
+      const blocks = [
+        { x: 120, y: 160, w: 280, h: 200, color: '#E53935', shadow: true },
+        { x: 420, y: 140, w: 280, h: 220, color: '#F59E0A', shadow: true },
+        { x: 160, y: 420, w: 280, h: 200, color: '#4CAF50', shadow: true },
+        { x: 480, y: 450, w: 280, h: 180, color: '#ED5999', shadow: true }
+      ];
+      
+      blocks.forEach(block => {
+        // Shadow layer (premium look)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.shadowBlur = 30;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 12;
+        
+        ctx.beginPath();
+        ctx.roundRect(block.x, block.y, block.w, block.h, 28);
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+        
+        // Main block with gradient
+        const blockGradient = ctx.createLinearGradient(block.x, block.y, block.x, block.y + block.h);
+        blockGradient.addColorStop(0, block.color);
+        blockGradient.addColorStop(1, adjustBrightness(block.color, -20));
+        
+        ctx.fillStyle = blockGradient;
+        ctx.beginPath();
+        ctx.roundRect(block.x, block.y, block.w, block.h, 28);
+        ctx.fill();
+        
+        // Highlight stripe (premium glass effect)
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.beginPath();
+        ctx.roundRect(block.x + 8, block.y + 8, block.w - 16, 20, 12);
+        ctx.fill();
+        
+        // Time label
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.font = 'bold 28px -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('09:00 AM', block.x + block.w/2, block.y + block.h/2 - 20);
+        
+        // Duration
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.font = '18px -apple-system, sans-serif';
+        ctx.fillText('1 hour', block.x + block.w/2, block.y + block.h/2 + 30);
+      });
+      
+      // Premium countdown circle at bottom
+      const timerX = 512;
+      const timerY = 820;
+      const timerRadius = 90;
+      
+      // Shadow under timer
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.shadowColor = 'rgba(229, 57, 53, 0.3)';
+      ctx.shadowBlur = 40;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 15;
+      ctx.beginPath();
+      ctx.arc(timerX, timerY, timerRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowColor = 'transparent';
+      
+      // Timer gradient
+      const timerGradient = ctx.createLinearGradient(timerX - timerRadius, timerY - timerRadius, timerX + timerRadius, timerY + timerRadius);
+      timerGradient.addColorStop(0, '#FF5252');
+      timerGradient.addColorStop(1, '#D32F2F');
+      ctx.fillStyle = timerGradient;
+      ctx.beginPath();
+      ctx.arc(timerX, timerY, timerRadius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Timer highlight
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.beginPath();
+      ctx.arc(timerX - 20, timerY - 20, timerRadius * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Timer text
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 90px -apple-system, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('2:45', timerX, timerY + 8);
+    }
+
+    function drawAppIconWarm() {
+      const canvas = document.getElementById('appIconWarm');
+      canvas.width = 1024;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+      
+      // Premium warm gradient background
+      const bgGradient = ctx.createLinearGradient(0, 0, 1024, 1024);
+      bgGradient.addColorStop(0, '#FFF5EE');
+      bgGradient.addColorStop(0.5, '#FEF9F5');
+      bgGradient.addColorStop(1, '#FFFAF5');
+      ctx.fillStyle = bgGradient;
+      ctx.fillRect(0, 0, 1024, 1024);
+      
+      // Rounded corners
+      const r = 128;
+      ctx.fillStyle = bgGradient;
+      ctx.beginPath();
+      ctx.moveTo(r, 0);
+      ctx.lineTo(1024 - r, 0);
+      ctx.arcTo(1024, 0, 1024, r, r);
+      ctx.lineTo(1024, 1024 - r);
+      ctx.arcTo(1024, 1024, 1024 - r, 1024, r);
+      ctx.lineTo(r, 1024);
+      ctx.arcTo(0, 1024, 0, 1024 - r, r);
+      ctx.lineTo(0, r);
+      ctx.arcTo(0, 0, r, 0, r);
+      ctx.fill();
+      
+      // Subtle texture overlay
+      ctx.fillStyle = 'rgba(255, 165, 0, 0.03)';
+      for (let i = 0; i < 30; i++) {
+        ctx.fillRect(Math.random() * 1024, Math.random() * 1024, Math.random() * 3, Math.random() * 3);
+      }
+      
+      // Warm accent glow from top-right
+      const accentGradient = ctx.createRadialGradient(800, 200, 0, 512, 512, 700);
+      accentGradient.addColorStop(0, 'rgba(255, 107, 53, 0.15)');
+      accentGradient.addColorStop(1, 'rgba(255, 107, 53, 0)');
+      ctx.fillStyle = accentGradient;
+      ctx.fillRect(0, 0, 1024, 1024);
+      
+      // Premium time block layout (staggered)
+      const blocks = [
+        { x: 120, y: 160, w: 280, h: 200, color: '#FF6B35', shadow: true },
+        { x: 420, y: 140, w: 280, h: 220, color: '#FFA500', shadow: true },
+        { x: 160, y: 420, w: 280, h: 200, color: '#FFD54F', shadow: true },
+        { x: 480, y: 450, w: 280, h: 180, color: '#FF8A65', shadow: true }
+      ];
+      
+      blocks.forEach(block => {
+        // Shadow layer
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.shadowColor = 'rgba(255, 107, 53, 0.2)';
+        ctx.shadowBlur = 28;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 10;
+        
+        ctx.beginPath();
+        ctx.roundRect(block.x, block.y, block.w, block.h, 28);
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+        
+        // Main block with premium gradient
+        const blockGradient = ctx.createLinearGradient(block.x, block.y, block.x, block.y + block.h);
+        blockGradient.addColorStop(0, block.color);
+        blockGradient.addColorStop(1, adjustBrightness(block.color, -15));
+        
+        ctx.fillStyle = blockGradient;
+        ctx.beginPath();
+        ctx.roundRect(block.x, block.y, block.w, block.h, 28);
+        ctx.fill();
+        
+        // Highlight stripe
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.beginPath();
+        ctx.roundRect(block.x + 8, block.y + 8, block.w - 16, 20, 12);
+        ctx.fill();
+        
+        // Time label
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.font = 'bold 28px -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('09:00 AM', block.x + block.w/2, block.y + block.h/2 - 20);
+        
+        // Duration
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.font = '18px -apple-system, sans-serif';
+        ctx.fillText('1 hour', block.x + block.w/2, block.y + block.h/2 + 30);
+      });
+      
+      // Premium countdown circle
+      const timerX = 512;
+      const timerY = 820;
+      const timerRadius = 90;
+      
+      // Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+      ctx.shadowColor = 'rgba(255, 107, 53, 0.25)';
+      ctx.shadowBlur = 38;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 14;
+      ctx.beginPath();
+      ctx.arc(timerX, timerY, timerRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowColor = 'transparent';
+      
+      // Timer premium gradient
+      const timerGradient = ctx.createLinearGradient(timerX - timerRadius, timerY - timerRadius, timerX + timerRadius, timerY + timerRadius);
+      timerGradient.addColorStop(0, '#FF7043');
+      timerGradient.addColorStop(1, '#E64A19');
+      ctx.fillStyle = timerGradient;
+      ctx.beginPath();
+      ctx.arc(timerX, timerY, timerRadius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Highlight
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+      ctx.beginPath();
+      ctx.arc(timerX - 25, timerY - 25, timerRadius * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Timer text
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 90px -apple-system, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('2:45', timerX, timerY + 8);
+    }
+    
+    // Helper to adjust color brightness
+    function adjustBrightness(color, amount) {
+      const usePound = color[0] === "#";
+      const col = usePound ? color.slice(1) : color;
+      const num = parseInt(col, 16);
+      const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+      const g = Math.max(0, Math.min(255, (num >> 8 & 0x00FF) + amount));
+      const b = Math.max(0, Math.min(255, (num & 0x0000FF) + amount));
+      return (usePound ? "#" : "") + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1);
+    }
+
+    function downloadIcon(canvasId, filename) {
+      const canvas = document.getElementById(canvasId);
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL(filename.endsWith('.jpg') ? 'image/jpeg' : 'image/png');
+      link.download = filename;
+      link.click();
+    }
+
+    // Add roundRect polyfill for older browsers
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        if (w < 2 * r) r = w / 2;
+        if (h < 2 * r) r = h / 2;
+        this.beginPath();
+        this.moveTo(x + r, y);
+        this.arcTo(x + w, y, x + w, y + h, r);
+        this.arcTo(x + w, y + h, x, y + h, r);
+        this.arcTo(x, y + h, x, y, r);
+        this.arcTo(x, y, x + w, y, r);
+        this.closePath();
+        return this;
+      }
+    }
+
+    // Draw on load
+    window.addEventListener('load', () => {
+      drawAppIconDark();
+      drawAppIconWarm();
+    });
+  </script>
+</body>
+</html>

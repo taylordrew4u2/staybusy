@@ -1,0 +1,62 @@
+/* ============================================================
+   StayBusy — Base layer
+   Font smoothing + a few opt-in type utility classes that wrap
+   the typography tokens. Components reference tokens directly;
+   these classes are a convenience for specimen cards and quick
+   layouts. Dark canvas is assumed everywhere.
+   ============================================================ */
+
+.sb-rounded { font-family: var(--sb-font-rounded); -webkit-font-smoothing: antialiased; }
+.sb-mono    { font-family: var(--sb-font-mono); font-variant-numeric: tabular-nums; }
+
+/* Type roles */
+.sb-display {
+  font-family: var(--sb-font-rounded);
+  font-weight: var(--sb-weight-heavy);
+  font-size: var(--sb-display-size);
+  line-height: var(--sb-display-line);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.sb-title-lg {
+  font-family: var(--sb-font-rounded);
+  font-weight: var(--sb-weight-heavy);
+  font-size: var(--sb-title-lg-size);
+  line-height: var(--sb-title-lg-line);
+  letter-spacing: -0.01em;
+}
+.sb-title {
+  font-family: var(--sb-font-rounded);
+  font-weight: var(--sb-weight-title);
+  font-size: var(--sb-title-size);
+  line-height: var(--sb-title-line);
+}
+.sb-body {
+  font-family: var(--sb-font-rounded);
+  font-weight: var(--sb-weight-body);
+  font-size: var(--sb-body-size);
+  line-height: var(--sb-body-line);
+}
+.sb-caption {
+  font-family: var(--sb-font-rounded);
+  font-weight: var(--sb-weight-body);
+  font-size: var(--sb-caption-size);
+  line-height: var(--sb-caption-line);
+  font-variant-numeric: tabular-nums;
+}
+.sb-code {
+  font-family: var(--sb-font-mono);
+  font-weight: 700;
+  font-size: var(--sb-code-size);
+  line-height: var(--sb-code-line);
+}
+
+/* Eyebrow — uppercase tracked label (NOW, NEXT, FREE UNTIL...) */
+.sb-eyebrow {
+  font-family: var(--sb-font-rounded);
+  font-weight: var(--sb-weight-body);
+  font-size: var(--sb-caption-size);
+  letter-spacing: var(--sb-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--sb-text-secondary);
+}

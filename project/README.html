@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StayBusy iOS Design System — Documentation</title>
+  <link rel="stylesheet" href="tokens.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: #f8f8f8;
+      color: #333;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #222;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: #666;
+      margin-bottom: 40px;
+    }
+
+    .section {
+      background: white;
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: #222;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 24px;
+      margin-bottom: 12px;
+      color: #333;
+    }
+
+    p {
+      color: #555;
+      margin-bottom: 16px;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 16px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    .comparison-table th {
+      background: #f5f5f5;
+      font-weight: 700;
+      color: #222;
+    }
+
+    .comparison-table tr:hover {
+      background: #fafafa;
+    }
+
+    .dark-badge {
+      display: inline-block;
+      background: #0D0D0F;
+      color: #F5F5F7;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+
+    .warm-badge {
+      display: inline-block;
+      background: #FF6B35;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 20px;
+    }
+
+    .color-sample {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 12px;
+      padding: 12px;
+      background: #f5f5f5;
+      border-radius: 8px;
+    }
+
+    .color-box {
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    .color-info {
+      flex: 1;
+    }
+
+    .color-name {
+      font-weight: 700;
+      color: #222;
+      margin-bottom: 2px;
+    }
+
+    .color-hex {
+      font-size: 12px;
+      font-family: monospace;
+      color: #666;
+    }
+
+    .feature-list {
+      list-style: none;
+      margin-top: 16px;
+    }
+
+    .feature-list li {
+      padding: 8px 0;
+      color: #555;
+    }
+
+    .feature-list li:before {
+      content: "✓ ";
+      color: #0D0D0F;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+
+    .warm-feature-list li:before {
+      content: "✓ ";
+      color: #FF6B35;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+
+    .code-block {
+      background: #f5f5f5;
+      border-left: 4px solid #0D0D0F;
+      padding: 16px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      margin: 16px 0;
+    }
+
+    .code-block.warm {
+      border-left-color: #FF6B35;
+    }
+
+    .file-link {
+      display: inline-block;
+      background: #0D0D0F;
+      color: #F5F5F7;
+      padding: 10px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      margin: 8px 8px 8px 0;
+      transition: opacity 0.2s;
+    }
+
+    .file-link:hover {
+      opacity: 0.8;
+    }
+
+    .file-link.warm {
+      background: #FF6B35;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+      .comparison-table {
+        font-size: 14px;
+      }
+      .comparison-table th,
+      .comparison-table td {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📱 StayBusy iOS Design System</h1>
+    <p class="subtitle">Complete UI kit with Dark & Warm themes, 40+ icons, and full component library</p>
+
+    <!-- Overview -->
+    <div class="section">
+      <h2>🎯 Overview</h2>
+      <p>The StayBusy iOS Design System provides a comprehensive, accessible component library designed for trip planning and time-block management. It features two distinct visual themes optimized for different contexts and user preferences.</p>
+      
+      <div class="grid-2" style="margin-top: 24px;">
+        <div>
+          <h3 style="margin-top: 0;">Dark Theme</h3>
+          <p style="margin-bottom: 16px;">Optimized for low-light environments. Features a warm coral-red accent (#E53935) with high contrast ratios and reduced eye strain.</p>
+          <a href="Dark-Theme-Showcase.html" class="file-link">View Dark Theme</a>
+        </div>
+        <div>
+          <h3 style="margin-top: 0;">Warm Theme</h3>
+          <p style="margin-bottom: 16px;">Friendly and approachable with vibrant warm tones (oranges, yellows, corals). Perfect for daytime use and social contexts.</p>
+          <a href="Warm-Theme-Showcase.html" class="file-link warm">View Warm Theme</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Design Tokens -->
+    <div class="section">
+      <h2>🎨 Design Tokens</h2>
+      <p>A single source of truth for all visual values. Both themes use the same token structure with different color mappings.</p>
+
+      <h3>Color System</h3>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th><span class="dark-badge">Dark</span></th>
+            <th><span class="warm-badge">Warm</span></th>
+            <th>Usage</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>background</strong></td>
+            <td>#0D0D0F</td>
+            <td>#FEF9F5</td>
+            <td>App background, full-screen fill</td>
+          </tr>
+          <tr>
+            <td><strong>surface</strong></td>
+            <td>#17171A</td>
+            <td>#FFFFFF</td>
+            <td>Cards, sections, default containers</td>
+          </tr>
+          <tr>
+            <td><strong>surface-elevated</strong></td>
+            <td>#1F1F24</td>
+            <td>#FFF8F3</td>
+            <td>Sheets, elevated surfaces, layered UI</td>
+          </tr>
+          <tr>
+            <td><strong>accent</strong></td>
+            <td>#E53935</td>
+            <td>#FF6B35</td>
+            <td>Primary actions, current state, focus</td>
+          </tr>
+          <tr>
+            <td><strong>text-primary</strong></td>
+            <td>#F5F5F7</td>
+            <td>#2D1F1A</td>
+            <td>Main text, headings</td>
+          </tr>
+          <tr>
+            <td><strong>text-secondary</strong></td>
+            <td>#A1A1AA</td>
+            <td>#8B6F5F</td>
+            <td>Supporting text, metadata</td>
+          </tr>
+          <tr>
+            <td><strong>text-tertiary</strong></td>
+            <td>#6B6B73</td>
+            <td>#B8A395</td>
+            <td>Disabled, subtle labels</td>
+          </tr>
+          <tr>
+            <td><strong>success</strong></td>
+            <td>#34C759</td>
+            <td>#6DC655</td>
+            <td>Confirmations, completed states</td>
+          </tr>
+          <tr>
+            <td><strong>warning</strong></td>
+            <td>#F5A623</td>
+            <td>#FFB84D</td>
+            <td>Overlaps, alerts, cautions</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Category Colors (8 semantic colors)</h3>
+      <p>Each category has a unique color for visual distinction across timeline, maps, and filters.</p>
+      <div class="grid-2" style="margin-top: 16px;">
+        <div>
+          <strong style="display: block; margin-bottom: 12px;">Dark Theme Categories</strong>
+          <div class="color-sample">
+            <div class="color-box" style="background: #E53935;"></div>
+            <div class="color-info">
+              <div class="color-name">Gig</div>
+              <div class="color-hex">#E53935</div>
+            </div>
+          </div>
+          <div class="color-sample">
+            <div class="color-box" style="background: #F59E0A;"></div>
+            <div class="color-info">
+              <div class="color-name">Travel</div>
+              <div class="color-hex">#F59E0A</div>
+            </div>
+          </div>
+          <div class="color-sample">
+            <div class="color-box" style="background: #4CAF50;"></div>
+            <div class="color-info">
+              <div class="color-name">Food</div>
+              <div class="color-hex">#4CAF50</div>
+            </div>
+          </div>
+          <div class="color-sample">
+            <div class="color-box" style="background: #ED5999;"></div>
+            <div class="color-info">
+              <div class="color-name">Social</div>
+              <div class="color-hex">#ED5999</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <strong style="display: block; margin-bottom: 12px;">Warm Theme Categories</strong>
+          <div class="color-sample">
+            <div class="color-box" style="background: #FF6B35;"></div>
+            <div class="color-info">
+              <div class="color-name">Gig</div>
+              <div class="color-hex">#FF6B35</div>
+            </div>
+          </div>
+          <div class="color-sample">
+            <div class="color-box" style="background: #FFA500;"></div>
+            <div class="color-info">
+              <div class="color-name">Travel</div>
+              <div class="color-hex">#FFA500</div>
+            </div>
+          </div>
+          <div class="color-sample">
+            <div class="color-box" style="background: #FFD54F;"></div>
+            <div class="color-info">
+              <div class="color-name">Food</div>
+              <div class="color-hex">#FFD54F</div>
+            </div>
+          </div>
+          <div class="color-sample">
+            <div class="color-box" style="background: #FF8A65;"></div>
+            <div class="color-info">
+              <div class="color-name">Social</div>
+              <div class="color-hex">#FF8A65</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Typography</h3>
+      <p>All typography uses SF Rounded (Apple's rounded system font) with Dynamic Type support for accessibility.</p>
+      <ul class="feature-list">
+        <li><strong>Display (32px, Heavy):</strong> Large headings, countdown timers</li>
+        <li><strong>Title Large (22px, Heavy):</strong> Screen titles, major section headers</li>
+        <li><strong>Title (18px, Bold):</strong> Block titles, card headings</li>
+        <li><strong>Body (16px, Medium):</strong> Main content, descriptions</li>
+        <li><strong>Caption (12px, Medium, Monospaced):</strong> Time ranges, metadata, timestamps</li>
+      </ul>
+
+      <h3>Spacing (4pt scale)</h3>
+      <div class="code-block">
+xs: 4px   | s: 8px   | m: 12px  | l: 16px
+xl: 24px  | xxl: 32px
+      </div>
+
+      <h3>Shape</h3>
+      <ul class="feature-list">
+        <li><strong>small (8px):</strong> Chips, small elements, input hints</li>
+        <li><strong>medium (14px):</strong> Cards, buttons, modal corners</li>
+        <li><strong>large (22px):</strong> Sheets, expanded surfaces, major containers</li>
+      </ul>
+
+      <h3>Interaction</h3>
+      <ul class="feature-list">
+        <li><strong>Minimum tap target:</strong> 44×44pt (accessibility standard)</li>
+        <li><strong>Pressed state opacity:</strong> 0.97 (subtle visual feedback)</li>
+        <li><strong>Past block opacity:</strong> 0.4 (clear visual dimming)</li>
+        <li><strong>Stroke width (current):</strong> 2pt (active block border)</li>
+        <li><strong>Stroke width (open):</strong> 1.5pt dashed (open slot indicator)</li>
+      </ul>
+    </div>
+
+    <!-- Components -->
+    <div class="section">
+      <h2>🧩 Component Library</h2>
+      <p>Ready-to-use components optimized for trip planning and time management.</p>
+
+      <h3>Block Card</h3>
+      <p>The core unit of the timeline. Displays activity blocks with category color stripe, title, time range, and location.</p>
+      <ul class="feature-list">
+        <li><strong>Default:</strong> Standard block with category stripe</li>
+        <li><strong>Current:</strong> Accent border + glow, elevated surface</li>
+        <li><strong>Past:</strong> Dimmed (40% opacity), no interaction</li>
+        <li><strong>Open Slot:</strong> Dashed border, no fill, "OPEN — duration" label</li>
+      </ul>
+
+      <h3>Now/Next Bar</h3>
+      <p>Pinned header showing current activity with countdown timer. Always displays a block—never empty.</p>
+      <ul class="feature-list">
+        <li>Large countdown display (monospaced digits prevent jitter)</li>
+        <li>Category color stripe for visual context</li>
+        <li>Location and time range below title</li>
+        <li>Three states: current active, between blocks, day done</li>
+      </ul>
+
+      <h3>Buttons</h3>
+      <ul class="feature-list">
+        <li><strong>Primary:</strong> Accent background, full width or auto</li>
+        <li><strong>Secondary:</strong> Surface + border, for alternative actions</li>
+        <li><strong>Ghost:</strong> Transparent, accent text, subtle actions</li>
+        <li>All buttons: 44pt minimum tap target, press feedback (0.97 opacity)</li>
+      </ul>
+
+      <h3>Category Chips</h3>
+      <p>Toggle-able filters for category selection. Show color dot + label.</p>
+      <ul class="feature-list">
+        <li>Unselected: border only, monochrome</li>
+        <li>Selected: accent background, white text/icon</li>
+        <li>Used in editor and filter UI</li>
+      </ul>
+
+      <h3>Input Fields</h3>
+      <p>Text and time inputs with consistent styling and focus states.</p>
+      <ul class="feature-list">
+        <li>Surface background with border</li>
+        <li>Focus state: accent border + subtle glow</li>
+        <li>Monospaced font for time fields</li>
+        <li>Placeholder text in tertiary color</li>
+      </ul>
+    </div>
+
+    <!-- Icon Set -->
+    <div class="section">
+      <h2>🎨 Icon Set (40+ Icons)</h2>
+      <p>A comprehensive filled icon set designed for both themes. All icons use the accent color and scale to 48×48pt.</p>
+      
+      <h3>Categories</h3>
+      <ul class="feature-list">
+        <li><strong>Trip & Travel (8 icons):</strong> Map, clock, calendar, plane, location, compass, camera, navigation</li>
+        <li><strong>Activities & Blocks (8 icons):</strong> Checkmark, done, calendar, add, close, more, alert, info</li>
+        <li><strong>Categories (8 icons):</strong> Work, social, travel, food, explore, rest, gig, admin</li>
+        <li><strong>Navigation (8 icons):</strong> Home, phone, trips, profile, settings, search, menu, back</li>
+        <li><strong>Status & Utilities (8 icons):</strong> User, sync, export, plus, clear, edit, delete, check</li>
+      </ul>
+
+      <a href="icons.html" class="file-link">View All Icons</a>
+    </div>
+
+    <!-- Accessibility -->
+    <div class="section">
+      <h2>♿ Accessibility</h2>
+      <ul class="feature-list">
+        <li><strong>Contrast:</strong> All text on background passes 4.5:1 WCAG AA (minimum for small text)</li>
+        <li><strong>Touch targets:</strong> Minimum 44×44pt for all interactive elements</li>
+        <li><strong>Color is never the only signal:</strong> Current block has border treatment + color; categories show both color + icon</li>
+        <li><strong>Dynamic Type:</strong> All text scales with system text size (SF Rounded Dynamic Type scales)</li>
+        <li><strong>Monospaced digits:</strong> Timers and timestamps use monospaced numbers so they don't jitter as seconds update</li>
+        <li><strong>Semantic HTML:</strong> Proper heading hierarchy, button roles, ARIA labels where needed</li>
+      </ul>
+    </div>
+
+    <!-- Implementation Guide -->
+    <div class="section">
+      <h2>🛠️ Implementation Guide</h2>
+      
+      <h3>CSS Variables (Theme-agnostic)</h3>
+      <p>All components use CSS custom properties. Switch themes by changing the body class.</p>
+      <div class="code-block">
+/* Dark theme (default) */
+body.theme-dark {
+  --bg: #0D0D0F;
+  --surface: #17171A;
+  --accent: #E53935;
+}
+
+/* Warm theme */
+body.theme-warm {
+  --bg: #FEF9F5;
+  --surface: #FFFFFF;
+  --accent: #FF6B35;
+}
+      </div>
+
+      <h3>Color Usage Pattern</h3>
+      <p>Always reference theme colors through CSS variables, never hardcoded hex values:</p>
+      <div class="code-block">
+/* ✓ Good */
+background: var(--surface);
+color: var(--text-primary);
+
+/* ✗ Avoid */
+background: #17171A;
+color: #F5F5F7;
+      </div>
+
+      <h3>Typography Pattern</h3>
+      <p>Use semantic font sizes, never arbitrary pixel values:</p>
+      <div class="code-block">
+font-family: var(--font-family-rounded);
+font-size: var(--font-size-title);
+font-weight: 700;
+      </div>
+
+      <h3>Spacing Pattern</h3>
+      <p>Always use the 4pt spacing scale:</p>
+      <div class="code-block">
+padding: var(--spacing-l) var(--spacing-xl);
+gap: var(--spacing-m);
+margin-bottom: var(--spacing-s);
+      </div>
+
+      <h3>Interactive States</h3>
+      <p>All tappable elements need visual feedback:</p>
+      <div class="code-block">
+button {
+  transition: opacity 0.2s ease;
+}
+
+button:active {
+  opacity: var(--opacity-pressed); /* 0.97 */
+}
+      </div>
+    </div>
+
+    <!-- File References -->
+    <div class="section">
+      <h2>📂 Project Files</h2>
+      <ul class="feature-list" style="list-style: none; padding: 0;">
+        <li style="padding: 8px 0;"><strong>tokens.css:</strong> All CSS custom properties for both themes</li>
+        <li style="padding: 8px 0;"><strong>Dark-Theme-Showcase.html:</strong> Complete dark theme component library</li>
+        <li style="padding: 8px 0;"><strong>Warm-Theme-Showcase.html:</strong> Complete warm theme component library</li>
+        <li style="padding: 8px 0;"><strong>icons.html:</strong> 40+ icon set with theme toggle</li>
+        <li style="padding: 8px 0;"><strong>README.md (this file):</strong> Design system documentation</li>
+      </ul>
+    </div>
+
+    <!-- Quick Start -->
+    <div class="section">
+      <h2>🚀 Quick Start</h2>
+      <ol style="color: #555; margin-left: 20px;">
+        <li style="margin-bottom: 12px;">Link <code>tokens.css</code> in your HTML <code>&lt;head&gt;</code></li>
+        <li style="margin-bottom: 12px;">Set theme class on <code>&lt;body&gt;</code>: <code>class="theme-dark"</code> or <code>class="theme-warm"</code></li>
+        <li style="margin-bottom: 12px;">Use CSS variables throughout your styles: <code>background: var(--surface);</code></li>
+        <li style="margin-bottom: 12px;">Reference component showcase files for structure and patterns</li>
+        <li>Icons are ready-to-use SVG with color inheritance from CSS variables</li>
+      </ol>
+    </div>
+
+    <div class="section" style="background: linear-gradient(135deg, #0D0D0F 0%, #17171A 50%, #FEF9F5 50%, #FFFFFF 100%); color: white; text-align: center;">
+      <h2 style="color: white; margin: 0;">🎉 Ready to build!</h2>
+      <p style="color: rgba(255,255,255,0.8); margin-top: 8px;">Both themes are production-ready. Choose dark for low-light contexts, warm for daytime and friendly interactions.</p>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,152 @@
+/* StayBusy iOS Design System — Tokens */
+
+:root {
+  /* ===== DARK THEME (StayBusy Original) ===== */
+  --ds-dark-bg: #0D0D0F;
+  --ds-dark-surface: #17171A;
+  --ds-dark-surface-elevated: #1F1F24;
+  --ds-dark-text-primary: #F5F5F7;
+  --ds-dark-text-secondary: #A1A1AA;
+  --ds-dark-text-tertiary: #6B6B73;
+  
+  --ds-dark-accent: #E53935;
+  --ds-dark-warning: #F5A623;
+  --ds-dark-success: #34C759;
+  --ds-dark-open-slot: #3A3A41;
+  
+  /* Dark category colors */
+  --ds-dark-cat-gig: #E53935;
+  --ds-dark-cat-travel: #F59E0A;
+  --ds-dark-cat-food: #4CAF50;
+  --ds-dark-cat-social: #ED5999;
+  --ds-dark-cat-work: #428AF5;
+  --ds-dark-cat-explore: #8C5CF5;
+  --ds-dark-cat-rest: #738C99;
+  --ds-dark-cat-admin: #9E9E9E;
+
+  /* ===== WARM THEME (Friendly & Approachable) ===== */
+  --ds-warm-bg: #FEF9F5;           /* Off-white with warm undertone */
+  --ds-warm-surface: #FFFFFF;       /* Pure white for cards */
+  --ds-warm-surface-elevated: #FFF8F3; /* Slightly warmer */
+  --ds-warm-text-primary: #2D1F1A;  /* Deep warm brown */
+  --ds-warm-text-secondary: #8B6F5F; /* Warm taupe */
+  --ds-warm-text-tertiary: #B8A395; /* Light warm gray */
+  
+  --ds-warm-accent: #FF6B35;        /* Coral-orange (warm) */
+  --ds-warm-warning: #FFB84D;       /* Warm amber */
+  --ds-warm-success: #6DC655;       /* Soft green */
+  --ds-warm-open-slot: #E8D4C4;     /* Warm beige for open slots */
+  
+  /* Warm category colors (oranges, yellows, corals, warm tones) */
+  --ds-warm-cat-gig: #FF6B35;       /* Coral-orange */
+  --ds-warm-cat-travel: #FFA500;    /* Vibrant orange */
+  --ds-warm-cat-food: #FFD54F;      /* Warm yellow */
+  --ds-warm-cat-social: #FF8A65;    /* Warm coral-salmon */
+  --ds-warm-cat-work: #FF9800;      /* Medium orange */
+  --ds-warm-cat-explore: #FFCA28;   /* Golden yellow */
+  --ds-warm-cat-rest: #D4A574;      /* Warm tan/beige */
+  --ds-warm-cat-admin: #C9A88A;     /* Warm gray-brown */
+
+  /* ===== SHARED TOKENS ===== */
+  --spacing-xs: 4px;
+  --spacing-s: 8px;
+  --spacing-m: 12px;
+  --spacing-l: 16px;
+  --spacing-xl: 24px;
+  --spacing-xxl: 32px;
+  
+  --radius-small: 8px;
+  --radius-medium: 14px;
+  --radius-large: 22px;
+  
+  --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-family-rounded: "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-family-mono: "SF Mono", "Monaco", "Menlo", monospace;
+  
+  --font-size-caption: 12px;
+  --font-size-body: 16px;
+  --font-size-title: 18px;
+  --font-size-title-large: 22px;
+  --font-size-display: 32px;
+  
+  --font-weight-medium: 500;
+  --font-weight-bold: 600;
+  --font-weight-heavy: 700;
+  
+  --min-tap-target: 44px;
+  --category-stripe-width: 4px;
+  --stroke-width-current: 2px;
+  --stroke-width-open: 1.5px;
+  --opacity-past-block: 0.4;
+  --opacity-pressed: 0.97;
+  
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Dark theme active (default or explicit) */
+body.theme-dark {
+  --bg: var(--ds-dark-bg);
+  --surface: var(--ds-dark-surface);
+  --surface-elevated: var(--ds-dark-surface-elevated);
+  --text-primary: var(--ds-dark-text-primary);
+  --text-secondary: var(--ds-dark-text-secondary);
+  --text-tertiary: var(--ds-dark-text-tertiary);
+  --accent: var(--ds-dark-accent);
+  --warning: var(--ds-dark-warning);
+  --success: var(--ds-dark-success);
+  --open-slot: var(--ds-dark-open-slot);
+  --cat-gig: var(--ds-dark-cat-gig);
+  --cat-travel: var(--ds-dark-cat-travel);
+  --cat-food: var(--ds-dark-cat-food);
+  --cat-social: var(--ds-dark-cat-social);
+  --cat-work: var(--ds-dark-cat-work);
+  --cat-explore: var(--ds-dark-cat-explore);
+  --cat-rest: var(--ds-dark-cat-rest);
+  --cat-admin: var(--ds-dark-cat-admin);
+}
+
+/* Warm theme active */
+body.theme-warm {
+  --bg: var(--ds-warm-bg);
+  --surface: var(--ds-warm-surface);
+  --surface-elevated: var(--ds-warm-surface-elevated);
+  --text-primary: var(--ds-warm-text-primary);
+  --text-secondary: var(--ds-warm-text-secondary);
+  --text-tertiary: var(--ds-warm-text-tertiary);
+  --accent: var(--ds-warm-accent);
+  --warning: var(--ds-warm-warning);
+  --success: var(--ds-warm-success);
+  --open-slot: var(--ds-warm-open-slot);
+  --cat-gig: var(--ds-warm-cat-gig);
+  --cat-travel: var(--ds-warm-cat-travel);
+  --cat-food: var(--ds-warm-cat-food);
+  --cat-social: var(--ds-warm-cat-social);
+  --cat-work: var(--ds-warm-cat-work);
+  --cat-explore: var(--ds-warm-cat-explore);
+  --cat-rest: var(--ds-warm-cat-rest);
+  --cat-admin: var(--ds-warm-cat-admin);
+}
+
+/* Default to dark theme */
+body {
+  --bg: var(--ds-dark-bg);
+  --surface: var(--ds-dark-surface);
+  --surface-elevated: var(--ds-dark-surface-elevated);
+  --text-primary: var(--ds-dark-text-primary);
+  --text-secondary: var(--ds-dark-text-secondary);
+  --text-tertiary: var(--ds-dark-text-tertiary);
+  --accent: var(--ds-dark-accent);
+  --warning: var(--ds-dark-warning);
+  --success: var(--ds-dark-success);
+  --open-slot: var(--ds-dark-open-slot);
+  --cat-gig: var(--ds-dark-cat-gig);
+  --cat-travel: var(--ds-dark-cat-travel);
+  --cat-food: var(--ds-dark-cat-food);
+  --cat-social: var(--ds-dark-cat-social);
+  --cat-work: var(--ds-dark-cat-work);
+  --cat-explore: var(--ds-dark-cat-explore);
+  --cat-rest: var(--ds-dark-cat-rest);
+  --cat-admin: var(--ds-dark-cat-admin);
+}
