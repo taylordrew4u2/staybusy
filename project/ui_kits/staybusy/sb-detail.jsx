@@ -25,17 +25,17 @@
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <DayPicker date={date} onChange={(d) => { setSelected(null); onDate(d); }} />
-        <div style={{ flex: 1, position: 'relative', margin: '0 0 0', overflow: 'hidden', background: '#101216' }}>
+        <div style={{ flex: 1, position: 'relative', margin: '0 0 0', overflow: 'hidden', background: 'var(--sb-map-bg)' }}>
           {/* faux street grid — flat, no gradient */}
           <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }} preserveAspectRatio="none">
             <defs>
               <pattern id="streets" width="46" height="46" patternUnits="userSpaceOnUse">
-                <path d="M0 0H46M0 0V46" stroke="#1b1e24" strokeWidth="1.5" fill="none" />
+                <path d="M0 0H46M0 0V46" style={{ stroke: 'var(--sb-map-grid)' }} strokeWidth="1.5" fill="none" />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#streets)" />
-            <path d="M-20 120 Q 200 60 460 200" stroke="#23262e" strokeWidth="10" fill="none" />
-            <path d="M120 -20 Q 180 300 320 700" stroke="#23262e" strokeWidth="14" fill="none" />
+            <path d="M-20 120 Q 200 60 460 200" style={{ stroke: 'var(--sb-map-road)' }} strokeWidth="10" fill="none" />
+            <path d="M120 -20 Q 180 300 320 700" style={{ stroke: 'var(--sb-map-road)' }} strokeWidth="14" fill="none" />
           </svg>
 
           {dayBlocks.length === 0 && (

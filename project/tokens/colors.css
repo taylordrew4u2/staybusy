@@ -47,6 +47,11 @@
   --sb-cat-rest-text:    #738C99;
   --sb-cat-admin-text:   #9E9E9E;
 
+  /* --- Map canvas ----------------------------------------- */
+  --sb-map-bg:          #101216; /* base canvas behind SVG grid */
+  --sb-map-grid:        #1b1e24; /* grid-line pattern color */
+  --sb-map-road:        #23262e; /* road stroke color */
+
   /* --- Semantic aliases ------------------------------------ */
   --sb-bg:              var(--sb-background);
   --sb-card:            var(--sb-surface);
@@ -104,6 +109,11 @@ body.theme-warm {
   --sb-cat-explore-text:  #7B5200; /* ~4.6:1 on white */
   --sb-cat-rest-text:     #6B4020; /* ~5.0:1 on white */
   --sb-cat-admin-text:    #5C3C2C; /* ~5.5:1 on white */
+
+  /* --- Map canvas ----------------------------------------- */
+  --sb-map-bg:          #EDE8E2; /* warm light canvas */
+  --sb-map-grid:        #D8D0C8; /* subtle grid lines */
+  --sb-map-road:        #CAC0B8; /* road strokes */
 
   /* --- Semantic aliases ------------------------------------ */
   --sb-bg:              var(--sb-background);
