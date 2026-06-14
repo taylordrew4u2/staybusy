@@ -1,7 +1,7 @@
 /* ============================================================
    StayBusy — Color tokens
-   Dark mode only. Mirrors Theme.swift (the app's single source
-   of truth). Base values first, then semantic aliases.
+   Dark (default) + Warm light theme. Apply body.theme-warm to
+   switch themes; all --sb-* variables stay the same name.
    ============================================================ */
 :root {
   /* --- Base surfaces --------------------------------------- */
@@ -56,4 +56,62 @@
   --sb-tint:            var(--sb-accent);
   --sb-on-accent:       #FFFFFF;
   --sb-accent-wash:     rgba(229, 57, 53, 0.18); /* icon tiles, NOW pill bg */
+}
+
+/* ============================================================
+   Warm light theme — activated via body.theme-warm
+   Vibrant warm category stripes (decorative) stay saturated.
+   Text variants are darkened for WCAG AA on white (#FFF).
+   ============================================================ */
+body.theme-warm {
+  /* --- Base surfaces --------------------------------------- */
+  --sb-background:        #FEF9F5; /* warm off-white */
+  --sb-surface:           #FFFFFF; /* cards */
+  --sb-surface-elevated:  #FFF8F3; /* slightly warmer than white */
+
+  /* --- Brand ----------------------------------------------- */
+  --sb-accent:            #FF6B35; /* coral-orange */
+
+  /* --- Text ------------------------------------------------ */
+  --sb-text-primary:      #2D1F1A; /* deep warm brown */
+  --sb-text-secondary:    #8B6F5F; /* warm taupe */
+  --sb-text-tertiary:     #B8A395; /* light warm gray */
+
+  /* --- Structural ------------------------------------------ */
+  --sb-open-slot:         #E8D4C4; /* warm beige border */
+  --sb-hour-rule:         #EEE0D6; /* warm hour-line fill */
+
+  /* --- Semantic status ------------------------------------- */
+  --sb-warning:           #CC7700; /* darkened amber, readable on white */
+  --sb-success:           #3A7D2A; /* darkened green */
+
+  /* --- Category (raw) — stripes / decorative fills --------- */
+  --sb-cat-gig:           #FF6B35; /* coral-orange */
+  --sb-cat-travel:        #FFA500; /* vibrant amber */
+  --sb-cat-food:          #FFD54F; /* warm yellow */
+  --sb-cat-social:        #FF8A65; /* warm salmon */
+  --sb-cat-work:          #FF9800; /* orange */
+  --sb-cat-explore:       #FFCA28; /* golden yellow */
+  --sb-cat-rest:          #D4A574; /* warm tan */
+  --sb-cat-admin:         #C9A88A; /* warm gray-brown */
+
+  /* --- Category (on-surface) — text labels, WCAG AA on white */
+  --sb-cat-gig-text:      #C44000; /* ~4.9:1 on white */
+  --sb-cat-travel-text:   #8B5E00; /* ~5.6:1 on white */
+  --sb-cat-food-text:     #6B4800; /* ~5.2:1 on white */
+  --sb-cat-social-text:   #B83800; /* ~4.7:1 on white */
+  --sb-cat-work-text:     #8B4C00; /* ~4.8:1 on white */
+  --sb-cat-explore-text:  #7B5200; /* ~4.6:1 on white */
+  --sb-cat-rest-text:     #6B4020; /* ~5.0:1 on white */
+  --sb-cat-admin-text:    #5C3C2C; /* ~5.5:1 on white */
+
+  /* --- Semantic aliases ------------------------------------ */
+  --sb-bg:              var(--sb-background);
+  --sb-card:            var(--sb-surface);
+  --sb-sheet:           var(--sb-surface-elevated);
+  --sb-border:          var(--sb-hour-rule);
+  --sb-divider:         rgba(184, 163, 149, 0.3);
+  --sb-tint:            var(--sb-accent);
+  --sb-on-accent:       #FFFFFF;
+  --sb-accent-wash:     rgba(255, 107, 53, 0.12);
 }

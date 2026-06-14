@@ -17,3 +17,12 @@
   /* Current-block accent glow (border does the work; glow is subtle) */
   --sb-glow-current:  0 0 0 1px rgba(229, 57, 53, 0.0), 0 4px 16px rgba(229, 57, 53, 0.12);
 }
+
+/* Warm theme — lighter shadows on the white/warm canvas */
+body.theme-warm {
+  --sb-shadow-float:   0 4px 10px rgba(0, 0, 0, 0.10);
+  --sb-shadow-pin:     0 2px 4px  rgba(0, 0, 0, 0.08);
+  --sb-shadow-sheet:   0 -4px 12px rgba(0, 0, 0, 0.08);
+  --sb-shadow-pop:     0 6px 20px rgba(0, 0, 0, 0.10);
+  --sb-glow-current:   0 0 0 1px rgba(255, 107, 53, 0.0), 0 4px 16px rgba(255, 107, 53, 0.18);
+}

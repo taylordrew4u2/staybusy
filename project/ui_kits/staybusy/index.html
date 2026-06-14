@@ -33,6 +33,7 @@
     const { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle, TweakColor } = window;
 
     const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "warm": false,
       "accent": "#E53935",
       "density": 1.25,
       "dimPast": true,
@@ -43,6 +44,7 @@
       const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
 
       React.useEffect(() => {
+        document.body.className = t.warm ? 'theme-warm' : '';
         const r = document.documentElement.style;
         r.setProperty('--sb-accent', t.accent);
         r.setProperty('--sb-accent-wash', `color-mix(in srgb, ${t.accent} 18%, transparent)`);
@@ -53,13 +55,18 @@
 
       return (
         <>
-          <Device dark>
+          <Device dark={!t.warm}>
             <StayBusyApp tweaks={t} />
           </Device>
           <TweaksPanel title="Tweaks">
             <TweakSection label="Theme" />
+            <TweakToggle label="Warm theme" value={t.warm}
+                         onChange={(v) => {
+                           setTweak('warm', v);
+                           setTweak('accent', v ? '#FF6B35' : '#E53935');
+                         }} />
             <TweakColor label="Accent" value={t.accent}
-                        options={['#E53935', '#F59E0A', '#428AF5', '#8C5CF5']}
+                        options={['#E53935', '#FF6B35', '#F59E0A', '#428AF5', '#8C5CF5']}
                         onChange={(v) => setTweak('accent', v)} />
             <TweakSlider label="Card radius" value={t.cardRadius} min={6} max={22} step={1} unit="px"
                          onChange={(v) => setTweak('cardRadius', v)} />
