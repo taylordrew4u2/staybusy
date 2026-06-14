@@ -1,0 +1,8 @@
+/* StayBusy webfonts.
+   SUBSTITUTIONS (the original app uses Apple system faces, which are
+   proprietary and cannot ship):
+     SF Pro Rounded  ->  Nunito        (rounded geometric sans, weights 500/700/800)
+     SF Mono         ->  JetBrains Mono (monospaced digits for timers & codes)
+   Swap these @import targets for self-hosted SF faces in a production
+   Apple-platform build. */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');

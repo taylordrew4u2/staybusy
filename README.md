@@ -1,25 +1,71 @@
-# CODING AGENTS: READ THIS FIRST
+# StayBusy
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+An ADHD-first solo-trip schedule app for iOS (SwiftUI + SwiftData).
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+Its design law: you can always answer **"what am I doing right now and what's
+next"** in under one second, and **empty time is visible instead of invisible** —
+rest and buffer are scheduled categories, never failures.
 
-## What you should do — IMPORTANT
+The app is **dark-mode only**, **flat** (no gradients), and built on a strict
+token system: 44pt tap targets, monospaced timers that never jitter, color
+always paired with iconography so color is never the only signal, and no
+dead-end empty screens.
 
-**Read the chat transcripts first.** There are 2 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
+## App structure
 
-**Find the primary design file under `project/` and read it top to bottom.** The chat transcripts will tell you which file the user was last iterating on. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
+Three tabs:
 
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
+- **Today** — a proportional, hour-ruled timeline. The current block is ringed
+  in accent so it's findable across a room; past blocks dim but never
+  disappear; gaps render as dashed **OPEN** cards. A pinned **Now / Next** bar
+  answers the core question and counts down live.
+- **Map** — the day's located blocks as numbered pins (Apple MapKit), with a
+  bottom card (Drive / Details) when you tap one.
+- **Trip** — a multi-day overview: totals, the "thinnest day" callout, and a
+  per-day density bar of scheduled-vs-open time.
 
-## About the design files
+Tapping a block opens a **detail** view (confirmation code to copy, notes,
+links, map, Leave-by ETA); the **editor** is a bottom sheet with category chips
+and a time range.
 
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+Key source files:
 
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
+- `staybusy/Theme.swift` — the single source of truth for every visual value
+  (colors, type, spacing, radius, strokes, motion, haptics).
+- `staybusy/prompt-8-design-system.md` — the design-system spec `Theme.swift`
+  implements.
+- `staybusy/Components/` — reusable UI (`BlockCard`, `NowNextBar`,
+  `OpenSlotCard`, `CategoryChip`, `PrimaryButton`, `TimeRangeLabel`,
+  `EmptyStateView`, `DirectionsButtonRow`, `PressableScale`).
+- `staybusy/TodayView.swift`, `MapTabView.swift`, `TripTabView.swift`,
+  `BlockDetailView.swift`, `BlockEditorView.swift` — the screens.
 
-## Bundle contents
+## Design system
 
-- `README.md` — this file
-- `chats/` — conversation transcripts (read these!)
-- `project/` — the `StayBusy Design System` project files (HTML prototypes, assets, components)
+[`design-system/`](design-system/) is the exported StayBusy design system — a
+compiler-indexed handoff bundle from [Claude Design](https://claude.ai/design),
+reverse-engineered from this repo. It contains:
+
+- **Tokens** (`design-system/project/tokens/`) — the dark-mode color system,
+  type scale, spacing, and effects as CSS custom properties that mirror
+  `Theme.swift` **1:1**.
+- **Components** (`design-system/project/components/core/`) — React reference
+  implementations of every primitive, each with a `.d.ts` contract and a
+  `.prompt.md` usage note.
+- **Foundations** (`design-system/project/guidelines/cards/`) — specimen cards
+  for colors, type, spacing, and brand.
+- **UI kit** (`design-system/project/ui_kits/staybusy/`) — a full interactive
+  HTML/React recreation of the app (Today / Map / Trip, detail, editor).
+- **`SKILL.md`** — an Agent Skill (`/staybusy-design`) for generating
+  on-brand StayBusy interfaces and assets in Claude Code.
+
+`Theme.swift` remains the authoritative source of truth; the design-system
+tokens mirror it. When building new StayBusy surfaces, read
+`design-system/project/readme.md` first — it documents the voice, visual
+foundations, and iconography in full.
+
+> **Substitutions (web only):** the app uses Apple **SF Pro Rounded** + **SF
+> Mono** and **SF Symbols** / **MapKit**, which are the source of truth. The web
+> bundle substitutes **Nunito**, **JetBrains Mono**, and **Phosphor** icons, and
+> renders a stylized flat map — these are reference approximations, not changes
+> to the app.

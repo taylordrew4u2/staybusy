@@ -1,0 +1,37 @@
+/* ============================================================
+   StayBusy — Spacing, radius, stroke, size, opacity tokens
+   Strict 4-pt scale. No spacing value outside this set is
+   allowed in the app (per the design-system pass).
+   ============================================================ */
+:root {
+  /* --- Spacing (4-pt scale) -------------------------------- */
+  --sb-space-xs:  4px;
+  --sb-space-s:   8px;
+  --sb-space-m:   12px;
+  --sb-space-l:   16px;
+  --sb-space-xl:  24px;
+  --sb-space-xxl: 32px;
+
+  /* --- Corner radius --------------------------------------- */
+  --sb-radius-small:  8px;  /* chips, icon tiles */
+  --sb-radius-medium: 14px; /* cards */
+  --sb-radius-large:  22px; /* sheets */
+
+  /* --- Stroke ---------------------------------------------- */
+  --sb-stroke-open-width: 1.5px;       /* dashed OPEN gap border */
+  --sb-stroke-open-dash:  6px 5px;     /* dash pattern */
+  --sb-stroke-current:    2px;         /* solid current-block border */
+  --sb-stripe-width:      4px;         /* category stripe */
+
+  /* --- Sizes ----------------------------------------------- */
+  --sb-tap-min:  44px;  /* minimum tap target — never smaller */
+
+  /* --- Opacity --------------------------------------------- */
+  --sb-opacity-past:    0.4;   /* @kind other */ /* past blocks dim, never hidden */
+  --sb-scale-pressed:   0.97;  /* @kind other */ /* press feedback scale */
+
+  /* --- Motion ---------------------------------------------- */
+  /* Only two animations exist in the whole app. */
+  --sb-motion-snap:   250ms cubic-bezier(0.2, 0.8, 0.2, 1); /* @kind other */ /* spring-ish, state changes */
+  --sb-motion-gentle: 350ms cubic-bezier(0.4, 0.0, 0.2, 1); /* @kind other */ /* scroll-to-now, layout shifts */
+}

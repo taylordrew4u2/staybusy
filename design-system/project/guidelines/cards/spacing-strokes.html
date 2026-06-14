@@ -1,0 +1,24 @@
+<!-- @dsCard group="Spacing" viewport="700x170" name="Strokes & stripe" subtitle="4-pt category stripe, 2-pt current border, 1.5-pt dashed OPEN" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  html,body{margin:0}
+  body{background:var(--sb-background);font-family:var(--sb-font-rounded);padding:20px;display:flex;gap:14px;align-items:stretch}
+  .col{flex:1;display:flex;flex-direction:column;gap:9px}
+  .demo{flex:1;min-height:86px;border-radius:var(--sb-radius-medium);display:flex;align-items:center;padding:0;overflow:hidden;background:var(--sb-surface)}
+  .stripe{width:4px;align-self:stretch;background:var(--sb-cat-gig);border-radius:3px;margin:8px 0}
+  .lab{font-size:12px;font-weight:700;color:var(--sb-text-secondary);padding-left:12px}
+  .cur{border:2px solid var(--sb-accent)}
+  .open{background:transparent;border:1.5px dashed var(--sb-open-slot);align-items:center;justify-content:center;color:var(--sb-text-tertiary);font-weight:600}
+  .cap{font-family:var(--sb-font-mono);font-size:11px;color:var(--sb-text-tertiary)}
+</style>
+</head>
+<body>
+  <div class="col"><div class="demo"><div class="stripe"></div><span class="lab">stripe 4</span></div><span class="cap">categoryStripe</span></div>
+  <div class="col"><div class="demo cur"><span class="lab">border 2</span></div><span class="cap">currentBlock</span></div>
+  <div class="col"><div class="demo open">OPEN — 1h 30m</div><span class="cap">openSlot 1.5 dashed</span></div>
+</body>
+</html>

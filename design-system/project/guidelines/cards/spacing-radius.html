@@ -1,0 +1,21 @@
+<!-- @dsCard group="Spacing" viewport="700x180" name="Corner radius" subtitle="small 8 chips · medium 14 cards · large 22 sheets" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  html,body{margin:0}
+  body{background:var(--sb-background);font-family:var(--sb-font-rounded);padding:22px;display:flex;gap:18px;align-items:center}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;flex:1}
+  .sq{width:100%;height:84px;background:var(--sb-surface-elevated);border:1.5px solid var(--sb-accent)}
+  .n{font-weight:800;font-size:14px;color:var(--sb-text-primary)}
+  .px{font-family:var(--sb-font-mono);font-size:11px;color:var(--sb-text-tertiary)}
+</style>
+</head>
+<body>
+  <div class="col"><div class="sq" style="border-radius:var(--sb-radius-small)"></div><span class="n">small</span><span class="px">8 · chips</span></div>
+  <div class="col"><div class="sq" style="border-radius:var(--sb-radius-medium)"></div><span class="n">medium</span><span class="px">14 · cards</span></div>
+  <div class="col"><div class="sq" style="border-radius:var(--sb-radius-large)"></div><span class="n">large</span><span class="px">22 · sheets</span></div>
+</body>
+</html>

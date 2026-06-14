@@ -1,0 +1,23 @@
+<!-- @dsCard group="Brand" viewport="700x180" name="Elevation" subtitle="Flat and dark — shadow only for genuinely floating elements. No gradients, ever" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  html,body{margin:0}
+  body{background:var(--sb-background);font-family:var(--sb-font-rounded);padding:26px 24px;display:flex;gap:30px;align-items:center}
+  .col{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .fab{width:56px;height:56px;border-radius:50%;background:var(--sb-accent);box-shadow:var(--sb-shadow-float);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;font-weight:800}
+  .pin{width:34px;height:34px;border-radius:50%;background:var(--sb-cat-work);border:2px solid #fff;box-shadow:var(--sb-shadow-pin);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-family:var(--sb-font-mono)}
+  .sheet{width:120px;height:48px;border-radius:var(--sb-radius-medium);background:var(--sb-surface);box-shadow:var(--sb-shadow-sheet)}
+  .lab{font-size:12px;font-weight:700;color:var(--sb-text-secondary)}
+  .spec{font-family:var(--sb-font-mono);font-size:10px;color:var(--sb-text-tertiary)}
+</style>
+</head>
+<body>
+  <div class="col"><div class="fab">+</div><span class="lab">Add button</span><span class="spec">shadow-float</span></div>
+  <div class="col"><div class="pin">3</div><span class="lab">Map pin</span><span class="spec">shadow-pin</span></div>
+  <div class="col"><div class="sheet"></div><span class="lab">Bottom card</span><span class="spec">shadow-sheet ↑</span></div>
+</body>
+</html>

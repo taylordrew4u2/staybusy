@@ -1,0 +1,50 @@
+/* ============================================================
+   StayBusy — Typography tokens
+   SF Rounded everywhere in the app (substituted with Nunito on
+   web). A small, fixed scale derived from iOS Dynamic Type text
+   styles. Monospaced digits wherever numbers tick or align, so
+   timers and times never jitter.
+   ============================================================ */
+:root {
+  /* --- Families ------------------------------------------- */
+  --sb-font-rounded: 'Nunito', ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
+  --sb-font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* --- Weights (Theme.swift uses .medium/.bold/.heavy) ----- */
+  --sb-weight-body:    500; /* medium */
+  --sb-weight-title:   700; /* bold   */
+  --sb-weight-heavy:   800; /* heavy  */
+
+  /* --- Type roles (size / line-height / weight) ------------
+     Sizes are the web rendering of each Dynamic Type role at
+     the default text size. Scale them with the viewport in
+     fixed-canvas layouts as needed. */
+
+  /* displayCountdown — the Now-bar timer. heavy, mono digits. */
+  --sb-display-size:   34px;
+  --sb-display-line:   40px;
+
+  /* titleLarge — screen headers, Now-bar title. heavy. */
+  --sb-title-lg-size:  26px;
+  --sb-title-lg-line:  32px;
+
+  /* title — block titles, section CTAs. bold. */
+  --sb-title-size:     18px;
+  --sb-title-line:     23px;
+
+  /* body — default copy. medium. */
+  --sb-body-size:      16px;
+  --sb-body-line:      22px;
+
+  /* caption — time ranges, eyebrows, metadata. medium, mono digits. */
+  --sb-caption-size:   13px;
+  --sb-caption-line:   17px;
+
+  /* codeHuge — confirmation codes. bold, MONOSPACED design. */
+  --sb-code-size:      34px;
+  --sb-code-line:      40px;
+
+  /* --- Eyebrow tracking (uppercase labels: NOW, NEXT...) --- */
+  --sb-tracking-eyebrow: 1.5px;
+  --sb-tracking-label:   1.2px;
+}
