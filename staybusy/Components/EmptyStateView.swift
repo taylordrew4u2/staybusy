@@ -15,19 +15,28 @@ struct EmptyStateView: View {
     let message: String?
     let actionTitle: String?
     let action: (() -> Void)?
+    let secondaryActionTitle: String?
+    let secondaryActionSymbol: String?
+    let secondaryAction: (() -> Void)?
 
     init(
         symbol: String,
         title: String,
         message: String? = nil,
         actionTitle: String? = nil,
-        action: (() -> Void)? = nil
+        action: (() -> Void)? = nil,
+        secondaryActionTitle: String? = nil,
+        secondaryActionSymbol: String? = nil,
+        secondaryAction: (() -> Void)? = nil
     ) {
         self.symbol = symbol
         self.title = title
         self.message = message
         self.actionTitle = actionTitle
         self.action = action
+        self.secondaryActionTitle = secondaryActionTitle
+        self.secondaryActionSymbol = secondaryActionSymbol
+        self.secondaryAction = secondaryAction
     }
 
     var body: some View {
@@ -49,6 +58,22 @@ struct EmptyStateView: View {
                 PrimaryButton(title: actionTitle, systemImage: "plus", action: action)
                     .frame(maxWidth: 260)
                     .padding(.top, Theme.Spacing.s)
+            }
+            if let secondaryActionTitle, let secondaryAction {
+                Button(action: secondaryAction) {
+                    HStack(spacing: Theme.Spacing.xs) {
+                        if let secondaryActionSymbol {
+                            Image(systemName: secondaryActionSymbol)
+                        }
+                        Text(secondaryActionTitle)
+                    }
+                    .font(Theme.Font.body)
+                    .foregroundStyle(Theme.Color.accent)
+                    .frame(minHeight: Theme.Size.minTapTarget)
+                    .padding(.horizontal, Theme.Spacing.m)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.pressable)
             }
         }
         .padding(Theme.Spacing.xl)

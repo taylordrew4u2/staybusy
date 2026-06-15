@@ -40,6 +40,11 @@ struct BlockEditorView: View {
     @State private var notes: String = ""
     @State private var links: [String] = []
     @State private var newLink: String = ""
+    @State private var ticketDrafts: [TicketDraft] = []
+    @State private var costText: String = ""
+    @State private var currencyCode: String = "USD"
+    @State private var phone: String = ""
+    @State private var website: String = ""
 
     @State private var locationQuery: String = ""
     @State private var addressSearch = AddressSearch()
@@ -71,6 +76,7 @@ struct BlockEditorView: View {
                     categorySection
                     timeSection
                     locationSection
+                    ticketsSection
                     moreSection
                     if editing != nil { deleteButton }
                 }
@@ -96,7 +102,7 @@ struct BlockEditorView: View {
             .toolbarBackground(Theme.Color.background, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
         }
-        .preferredColorScheme(.dark)
+        .appTheme()
         .tint(Theme.Color.accent)
         .onAppear(perform: hydrate)
         .onChange(of: locationQuery) { _, newValue in
@@ -132,6 +138,11 @@ struct BlockEditorView: View {
             confirmationCode = b.confirmationCode
             notes = b.notes
             links = b.links
+            ticketDrafts = b.orderedTickets.map(TicketDraft.init(from:))
+            costText = b.cost > 0 ? formatCost(b.cost) : ""
+            currencyCode = b.currencyCode
+            phone = b.phone
+            website = b.website
             locationQuery = b.locationName
         } else if let s = suggested {
             start = s.start
@@ -151,6 +162,9 @@ struct BlockEditorView: View {
         guard canSave else { return }
         let isCreate = editing == nil
         let resultBlock: Block
+        let parsedCost = parseCost(costText)
+        let trimmedPhone = phone.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedWebsite = website.trimmingCharacters(in: .whitespacesAndNewlines)
         if let b = editing {
             b.title = trimmedTitle
             b.start = start
@@ -163,6 +177,10 @@ struct BlockEditorView: View {
             b.confirmationCode = confirmationCode
             b.notes = notes
             b.links = links
+            b.cost = parsedCost
+            b.currencyCode = currencyCode
+            b.phone = trimmedPhone
+            b.website = trimmedWebsite
             resultBlock = b
         } else {
             let new = Block(
@@ -176,11 +194,16 @@ struct BlockEditorView: View {
                 longitude: longitude,
                 confirmationCode: confirmationCode,
                 notes: notes,
-                links: links
+                links: links,
+                cost: parsedCost,
+                currencyCode: currencyCode,
+                phone: trimmedPhone,
+                website: trimmedWebsite
             )
             context.insert(new)
             resultBlock = new
         }
+        syncTickets(into: resultBlock)
         try? context.save()
         Theme.Haptic.blockSaved()
         Task {
@@ -209,11 +232,63 @@ struct BlockEditorView: View {
         end = start.addingTimeInterval(TimeInterval(minutes * 60))
     }
 
+    private func parseCost(_ text: String) -> Double {
+        let cleaned = text
+            .replacingOccurrences(of: ",", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return Double(cleaned) ?? 0
+    }
+
+    private func formatCost(_ value: Double) -> String {
+        if value.truncatingRemainder(dividingBy: 1) == 0 {
+            return String(Int(value))
+        }
+        return String(format: "%.2f", value)
+    }
+
     private func addLink() {
         let trimmed = newLink.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         links.append(trimmed)
         newLink = ""
+    }
+
+    // MARK: - Tickets
+
+    private func addTicket() {
+        ticketDrafts.append(TicketDraft())
+    }
+
+    private func removeTicket(at offset: Int) {
+        guard ticketDrafts.indices.contains(offset) else { return }
+        ticketDrafts.remove(at: offset)
+    }
+
+    /// Replace the block's tickets with the current drafts. Empty drafts
+    /// are dropped (the user added a row and didn't fill it in). The
+    /// simplest correct path: delete every existing ticket and insert
+    /// fresh ones in the drafts' order — tickets are cheap, cascading
+    /// from Block, and this avoids per-field diffing.
+    private func syncTickets(into block: Block) {
+        for existing in block.tickets ?? [] {
+            context.delete(existing)
+        }
+        let kept = ticketDrafts.filter { !$0.isEmpty }
+        block.tickets = []
+        for (idx, draft) in kept.enumerated() {
+            let ticket = Ticket(
+                name: draft.name.trimmingCharacters(in: .whitespacesAndNewlines),
+                confirmationCode: draft.confirmationCode
+                    .trimmingCharacters(in: .whitespacesAndNewlines),
+                seat: draft.seat.trimmingCharacters(in: .whitespacesAndNewlines),
+                gate: draft.gate.trimmingCharacters(in: .whitespacesAndNewlines),
+                holderName: draft.holderName
+                    .trimmingCharacters(in: .whitespacesAndNewlines),
+                sortOrder: idx
+            )
+            ticket.block = block
+            context.insert(ticket)
+        }
     }
 
     @MainActor
@@ -300,10 +375,48 @@ struct BlockEditorView: View {
                     }
                     .foregroundStyle(Theme.Color.warning)
                 }
+                if looksLikeAirportDraft {
+                    HStack(spacing: Theme.Spacing.xs) {
+                        Image(systemName: "airplane.departure")
+                            .font(Theme.Font.caption)
+                        Text(airportLabel)
+                            .font(Theme.Font.caption)
+                    }
+                    .foregroundStyle(Theme.Color.accent)
+                    .padding(.horizontal, Theme.Spacing.s)
+                    .padding(.vertical, 4)
+                    .background(
+                        Theme.Color.accent.opacity(0.15),
+                        in: Capsule()
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
             .padding(Theme.Spacing.m)
             .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
         }
+    }
+
+    /// Lightweight mirror of NotificationManager's airport detection,
+    /// reading from the editor's local draft state so the hint updates
+    /// live as the user fills in fields.
+    private var looksLikeAirportDraft: Bool {
+        guard category == .travel else { return false }
+        if ticketDrafts.contains(where: { !$0.gate.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+            return true
+        }
+        let lowered = (title + " " + locationName + " " + notes).lowercased()
+        let signals = ["airport", "flight", "fly ", "boarding", "gate", "departure"]
+        return signals.contains { lowered.contains($0) }
+    }
+
+    private var airportLabel: String {
+        let lowered = (title + " " + locationName + " " + notes).lowercased()
+        let isIntl = ["international", "intl ", "customs", "passport"]
+            .contains { lowered.contains($0) }
+        return isIntl
+            ? "Airport departure — you'll be reminded 3h ahead"
+            : "Airport departure — you'll be reminded 2h ahead"
     }
 
     private var locationSection: some View {
@@ -380,6 +493,48 @@ struct BlockEditorView: View {
         }
     }
 
+    private var ticketsSection: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+            HStack(alignment: .firstTextBaseline) {
+                sectionLabel("TICKETS (OPTIONAL)")
+                Spacer()
+                if !ticketDrafts.isEmpty {
+                    Text("\(ticketDrafts.count)")
+                        .font(Theme.Font.caption)
+                        .foregroundStyle(Theme.Color.textTertiary)
+                }
+            }
+
+            VStack(spacing: Theme.Spacing.m) {
+                ForEach(Array(ticketDrafts.enumerated()), id: \.element.id) { idx, _ in
+                    TicketEditorCard(
+                        draft: $ticketDrafts[idx],
+                        index: idx,
+                        onRemove: { removeTicket(at: idx) }
+                    )
+                }
+
+                Button(action: addTicket) {
+                    HStack(spacing: Theme.Spacing.s) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(Theme.Font.title)
+                        Text(ticketDrafts.isEmpty ? "Add a ticket" : "Add another ticket")
+                            .font(Theme.Font.title)
+                    }
+                    .foregroundStyle(Theme.Color.accent)
+                    .frame(maxWidth: .infinity, minHeight: Theme.Size.minTapTarget)
+                    .padding(.vertical, Theme.Spacing.s)
+                    .background(
+                        Theme.Color.accent.opacity(0.12),
+                        in: RoundedRectangle(cornerRadius: Theme.Radius.medium)
+                    )
+                }
+                .buttonStyle(.pressable)
+                .accessibilityLabel("Add a ticket")
+            }
+        }
+    }
+
     private var moreSection: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s) {
             Button {
@@ -399,6 +554,8 @@ struct BlockEditorView: View {
 
             if showMore {
                 VStack(alignment: .leading, spacing: Theme.Spacing.m) {
+                    costField
+                    contactFields
                     confirmationField
                     notesField
                     linksField
@@ -407,6 +564,101 @@ struct BlockEditorView: View {
                 .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
             }
         }
+    }
+
+    private var costField: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+            miniLabel("COST")
+            HStack(spacing: Theme.Spacing.s) {
+                Text(currencySymbol)
+                    .font(Theme.Font.body)
+                    .foregroundStyle(Theme.Color.textTertiary)
+                    .frame(width: 18, alignment: .center)
+                TextField("0", text: $costText)
+                    .keyboardType(.decimalPad)
+                    .font(Theme.Font.body.monospacedDigit())
+                    .foregroundStyle(Theme.Color.textPrimary)
+                    .frame(maxWidth: .infinity)
+                Menu {
+                    ForEach(supportedCurrencies, id: \.self) { code in
+                        Button {
+                            currencyCode = code
+                        } label: {
+                            if code == currencyCode {
+                                Label(code, systemImage: "checkmark")
+                            } else {
+                                Text(code)
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(currencyCode)
+                            .font(Theme.Font.caption)
+                            .foregroundStyle(Theme.Color.textSecondary)
+                        Image(systemName: "chevron.down")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.Color.textTertiary)
+                    }
+                    .padding(.horizontal, Theme.Spacing.s)
+                    .padding(.vertical, 4)
+                    .background(
+                        Theme.Color.surface,
+                        in: Capsule()
+                    )
+                }
+            }
+            .padding(.horizontal, Theme.Spacing.m)
+            .padding(.vertical, Theme.Spacing.s)
+            .background(
+                Theme.Color.surfaceElevated,
+                in: RoundedRectangle(cornerRadius: Theme.Radius.small)
+            )
+        }
+    }
+
+    private var contactFields: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.m) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                miniLabel("PHONE")
+                TextField("e.g. (212) 555-1234", text: $phone)
+                    .keyboardType(.phonePad)
+                    .font(Theme.Font.body)
+                    .foregroundStyle(Theme.Color.textPrimary)
+                    .padding(.horizontal, Theme.Spacing.m)
+                    .padding(.vertical, Theme.Spacing.s)
+                    .background(
+                        Theme.Color.surfaceElevated,
+                        in: RoundedRectangle(cornerRadius: Theme.Radius.small)
+                    )
+            }
+            VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                miniLabel("WEBSITE")
+                TextField("e.g. brooklynsteel.com", text: $website)
+                    .keyboardType(.URL)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .font(Theme.Font.body)
+                    .foregroundStyle(Theme.Color.textPrimary)
+                    .padding(.horizontal, Theme.Spacing.m)
+                    .padding(.vertical, Theme.Spacing.s)
+                    .background(
+                        Theme.Color.surfaceElevated,
+                        in: RoundedRectangle(cornerRadius: Theme.Radius.small)
+                    )
+            }
+        }
+    }
+
+    private var currencySymbol: String {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.currencyCode = currencyCode
+        return f.currencySymbol ?? "$"
+    }
+
+    private var supportedCurrencies: [String] {
+        ["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "MXN", "CHF"]
     }
 
     private var confirmationField: some View {
@@ -633,6 +885,152 @@ final class AddressSearch: NSObject, MKLocalSearchCompleterDelegate {
         if let admin = placemark.administrativeArea, !admin.isEmpty { parts.append(admin) }
         return parts.isEmpty ? fallback : parts.joined(separator: ", ")
     }
+}
+
+// MARK: - Ticket draft + editor card
+
+struct TicketDraft: Identifiable, Equatable {
+    let id: UUID
+    var name: String
+    var confirmationCode: String
+    var seat: String
+    var gate: String
+    var holderName: String
+
+    init(
+        id: UUID = UUID(),
+        name: String = "",
+        confirmationCode: String = "",
+        seat: String = "",
+        gate: String = "",
+        holderName: String = ""
+    ) {
+        self.id = id
+        self.name = name
+        self.confirmationCode = confirmationCode
+        self.seat = seat
+        self.gate = gate
+        self.holderName = holderName
+    }
+
+    init(from ticket: Ticket) {
+        self.init(
+            name: ticket.name,
+            confirmationCode: ticket.confirmationCode,
+            seat: ticket.seat,
+            gate: ticket.gate,
+            holderName: ticket.holderName
+        )
+    }
+
+    var isEmpty: Bool {
+        name.isEmpty
+            && confirmationCode.isEmpty
+            && seat.isEmpty
+            && gate.isEmpty
+            && holderName.isEmpty
+    }
+}
+
+private struct TicketEditorCard: View {
+    @Binding var draft: TicketDraft
+    let index: Int
+    let onRemove: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+            HStack {
+                Text("TICKET \(index + 1)")
+                    .font(Theme.Font.caption)
+                    .tracking(1.2)
+                    .foregroundStyle(Theme.Color.textTertiary)
+                Spacer()
+                Button(action: onRemove) {
+                    Image(systemName: "minus.circle.fill")
+                        .font(Theme.Font.title)
+                        .foregroundStyle(Theme.Color.warning)
+                        .frame(
+                            width: Theme.Size.minTapTarget,
+                            height: Theme.Size.minTapTarget
+                        )
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.pressable)
+                .accessibilityLabel("Remove ticket \(index + 1)")
+            }
+
+            field("LABEL", placeholder: "e.g. Boarding pass") {
+                TextField("e.g. Boarding pass", text: $draft.name)
+                    .textInputAutocapitalization(.sentences)
+                    .autocorrectionDisabled(false)
+            }
+
+            field("CONFIRMATION CODE", placeholder: "e.g. DL-AB12CD") {
+                TextField("e.g. DL-AB12CD", text: $draft.confirmationCode)
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+            }
+
+            HStack(spacing: Theme.Spacing.s) {
+                field("SEAT") {
+                    TextField("12A", text: $draft.seat)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                }
+                field("GATE") {
+                    TextField("B23", text: $draft.gate)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                }
+            }
+
+            field("HOLDER (OPTIONAL)") {
+                TextField("Name on ticket", text: $draft.holderName)
+                    .textInputAutocapitalization(.words)
+            }
+        }
+        .padding(Theme.Spacing.m)
+        .background(
+            Theme.Color.surface,
+            in: RoundedRectangle(cornerRadius: Theme.Radius.medium)
+        )
+    }
+
+    @ViewBuilder
+    private func field<Content: View>(
+        _ label: String,
+        placeholder: String? = nil,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(Theme.Font.caption)
+                .tracking(1.2)
+                .foregroundStyle(Theme.Color.textTertiary)
+            content()
+                .font(Theme.Font.body)
+                .foregroundStyle(Theme.Color.textPrimary)
+                .padding(.horizontal, Theme.Spacing.m)
+                .padding(.vertical, Theme.Spacing.s)
+                .background(
+                    Theme.Color.surfaceElevated,
+                    in: RoundedRectangle(cornerRadius: Theme.Radius.small)
+                )
+        }
+    }
+}
+
+#Preview("Edit Block") {
+    let container = try! ModelContainer(
+        for: Block.self, Ticket.self,
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    )
+    SampleData.seedIfNeeded(context: container.mainContext)
+    let descriptor = FetchDescriptor<Block>(sortBy: [SortDescriptor(\.start)])
+    let block = (try? container.mainContext.fetch(descriptor))?
+        .first(where: { !$0.orderedTickets.isEmpty })
+    return BlockEditorView(editing: block, suggested: nil)
+        .modelContainer(container)
 }
 
 #Preview("New Block") {

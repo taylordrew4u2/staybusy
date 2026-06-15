@@ -32,6 +32,7 @@
 		BA0ED0A82FDCBBD100D92071 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		BA0ED0D12FDCC42B00D92071 /* StayBusyWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StayBusyWidgetsExtension.entitlements; sourceTree = "<group>"; };
 		BAEFA1262FDCDBD50026391C /* StayBusyWidgetsExtensionDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StayBusyWidgetsExtensionDebug.entitlements; sourceTree = "<group>"; };
+		SB00000000000000000005 /* staybusy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = staybusy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -100,6 +101,7 @@
 		SB00000000000000000004 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				SB00000000000000000005 /* staybusy.app */,
 				BA0ED0A42FDCBBD100D92071 /* StayBusyWidgetsExtension.appex */,
 			);
 			name = Products;
@@ -148,6 +150,7 @@
 			);
 			name = staybusy;
 			productName = staybusy;
+			productReference = SB00000000000000000005 /* staybusy.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -227,7 +230,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = StayBusyWidgetsExtensionDebug.entitlements;
+				CODE_SIGN_ENTITLEMENTS = StayBusyWidgetsExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -422,6 +425,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = staybusy/Info.plist;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "To add events  you do ";
 				INFOPLIST_KEY_NSCameraUsageDescription = "StayBusy uses the camera to capture ticket and confirmation photos.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "StayBusy uses your location to estimate when to leave for each scheduled block.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -456,6 +460,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = staybusy/Info.plist;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "To add events  you do ";
 				INFOPLIST_KEY_NSCameraUsageDescription = "StayBusy uses the camera to capture ticket and confirmation photos.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "StayBusy uses your location to estimate when to leave for each scheduled block.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;

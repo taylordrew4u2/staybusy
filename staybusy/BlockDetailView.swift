@@ -15,6 +15,22 @@ import UIKit
 
 // MARK: - Detail view
 
+/// Drives the inline ticket editor sheet from BlockDetailView — `.new`
+/// creates a fresh ticket on the parent block, `.edit(_:)` opens an
+/// existing one for changes or deletion. `Identifiable` so it pairs
+/// with `.sheet(item:)`.
+enum TicketSheetMode: Identifiable {
+    case new
+    case edit(Ticket)
+
+    var id: String {
+        switch self {
+        case .new: return "new"
+        case .edit(let t): return "edit-\(t.persistentModelID.hashValue)"
+        }
+    }
+}
+
 struct BlockDetailView: View {
     let block: Block
     let onEdit: () -> Void
@@ -29,6 +45,8 @@ struct BlockDetailView: View {
     @State private var fullScreenSelection: IndexBox?
     @State private var leaveByModel = LeaveByModel()
     @State private var copiedCode = false
+    @State private var copiedTicketID: PersistentIdentifier?
+    @State private var ticketSheet: TicketSheetMode?
 
     private var blockCoordinate: CLLocationCoordinate2D? {
         guard let lat = block.latitude, let lng = block.longitude else { return nil }
@@ -42,6 +60,7 @@ struct BlockDetailView: View {
                     attachmentsCarousel
                 }
                 ingestionButtons
+                ticketsSection
                 if !block.confirmationCode.isEmpty {
                     confirmationSection
                 }
@@ -74,8 +93,16 @@ struct BlockDetailView: View {
         }
         .toolbarBackground(Theme.Color.background, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
-        .preferredColorScheme(.dark)
+        .appTheme()
         .tint(Theme.Color.accent)
+        .sheet(item: $ticketSheet) { mode in
+            switch mode {
+            case .new:
+                TicketEditorSheet(block: block, editing: nil)
+            case .edit(let ticket):
+                TicketEditorSheet(block: block, editing: ticket)
+            }
+        }
         .onAppear {
             attachmentURLs = AttachmentStore.urls(for: block.attachmentFilenames)
             if let coord = blockCoordinate {
@@ -218,6 +245,77 @@ struct BlockDetailView: View {
 
     // MARK: - Confirmation code
 
+    // MARK: - Tickets
+
+    private var ticketsSection: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+            HStack(alignment: .firstTextBaseline) {
+                sectionLabel("TICKETS")
+                Spacer()
+                if !block.orderedTickets.isEmpty {
+                    Text("\(block.orderedTickets.count)")
+                        .font(Theme.Font.caption)
+                        .foregroundStyle(Theme.Color.textTertiary)
+                }
+            }
+
+            if !block.orderedTickets.isEmpty {
+                VStack(spacing: Theme.Spacing.s) {
+                    ForEach(block.orderedTickets, id: \.persistentModelID) { ticket in
+                        TicketCard(
+                            ticket: ticket,
+                            category: block.category,
+                            isCopied: copiedTicketID == ticket.persistentModelID,
+                            onCopy: { copyTicket(ticket) },
+                            onEdit: { ticketSheet = .edit(ticket) }
+                        )
+                    }
+                }
+            }
+
+            Button {
+                ticketSheet = .new
+            } label: {
+                HStack(spacing: Theme.Spacing.s) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(Theme.Font.title)
+                    Text(block.orderedTickets.isEmpty ? "Add a ticket" : "Add another ticket")
+                        .font(Theme.Font.title)
+                }
+                .foregroundStyle(Theme.Color.accent)
+                .frame(maxWidth: .infinity, minHeight: Theme.Size.minTapTarget)
+                .padding(.vertical, Theme.Spacing.s)
+                .background(
+                    Theme.Color.accent.opacity(0.12),
+                    in: RoundedRectangle(cornerRadius: Theme.Radius.medium)
+                )
+            }
+            .buttonStyle(.pressable)
+            .accessibilityLabel("Add a ticket")
+        }
+    }
+
+    private func copyTicket(_ ticket: Ticket) {
+        let code = ticket.confirmationCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !code.isEmpty else { return }
+        UIPasteboard.general.string = code
+        Theme.Haptic.codeCopied()
+        let id = ticket.persistentModelID
+        withAnimation(Theme.Motion.snap(reduceMotion: reduceMotion)) {
+            copiedTicketID = id
+        }
+        Task {
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            await MainActor.run {
+                if copiedTicketID == id {
+                    withAnimation(Theme.Motion.snap(reduceMotion: reduceMotion)) {
+                        copiedTicketID = nil
+                    }
+                }
+            }
+        }
+    }
+
     private var confirmationSection: some View {
         Button {
             UIPasteboard.general.string = block.confirmationCode
@@ -340,6 +438,10 @@ struct BlockDetailView: View {
                     .font(Theme.Font.caption)
                     .foregroundStyle(Theme.Color.textTertiary)
             }
+            if hasContactRow {
+                contactRow
+                    .padding(.top, Theme.Spacing.xs)
+            }
             if !block.notes.isEmpty {
                 Text(block.notes)
                     .font(Theme.Font.body)
@@ -350,6 +452,61 @@ struct BlockDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Theme.Spacing.l)
         .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
+    }
+
+    private var hasContactRow: Bool {
+        block.cost > 0 || !block.phone.isEmpty || !block.website.isEmpty
+    }
+
+    private var contactRow: some View {
+        FlowRow(spacing: Theme.Spacing.s) {
+            if block.cost > 0 {
+                Chip(
+                    symbol: "creditcard.fill",
+                    label: costLabel,
+                    accentTint: true
+                )
+            }
+            if !block.phone.isEmpty, let phoneURL = phoneURL {
+                Link(destination: phoneURL) {
+                    Chip(symbol: "phone.fill", label: block.phone)
+                }
+            }
+            if !block.website.isEmpty, let websiteURL = websiteURL {
+                Link(destination: websiteURL) {
+                    Chip(symbol: "safari.fill", label: prettyDomain(block.website))
+                }
+            }
+        }
+    }
+
+    private var costLabel: String {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.currencyCode = block.currencyCode
+        f.maximumFractionDigits = block.cost.truncatingRemainder(dividingBy: 1) == 0 ? 0 : 2
+        return f.string(from: NSNumber(value: block.cost)) ?? "\(block.cost)"
+    }
+
+    private var phoneURL: URL? {
+        let digits = block.phone.filter { $0.isNumber || $0 == "+" }
+        return URL(string: "tel:\(digits)")
+    }
+
+    private var websiteURL: URL? {
+        var s = block.website.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !s.isEmpty else { return nil }
+        if !s.contains("://") { s = "https://" + s }
+        return URL(string: s)
+    }
+
+    private func prettyDomain(_ raw: String) -> String {
+        var s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        s = s.replacingOccurrences(of: "https://", with: "")
+        s = s.replacingOccurrences(of: "http://", with: "")
+        if s.hasPrefix("www.") { s.removeFirst(4) }
+        if let slash = s.firstIndex(of: "/") { s = String(s[..<slash]) }
+        return s
     }
 
     private var timeRangeString: String {
@@ -728,96 +885,227 @@ enum AttachmentStore {
     }
 }
 
-// MARK: - Leave by model
+// MARK: - Chip + FlowRow
+//
+// Compact tap-target pill used in the info section for cost / phone /
+// website. FlowRow wraps chips onto multiple lines when the row runs
+// out of horizontal space.
 
-@Observable
-final class LeaveByModel: NSObject, CLLocationManagerDelegate {
-    enum State: Equatable {
-        case idle
-        case requestingPermission
-        case denied
-        case computing
-        case ready(leaveBy: Date, eta: TimeInterval)
-        case stale
+private struct Chip: View {
+    let symbol: String
+    let label: String
+    var accentTint: Bool = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: symbol)
+                .font(Theme.Font.caption)
+            Text(label)
+                .font(Theme.Font.caption)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, Theme.Spacing.s)
+        .padding(.vertical, 6)
+        .foregroundStyle(
+            accentTint ? Theme.Color.accent : Theme.Color.textPrimary
+        )
+        .background(
+            accentTint
+                ? Theme.Color.accent.opacity(0.18)
+                : Theme.Color.surfaceElevated,
+            in: Capsule()
+        )
+        .frame(minHeight: 28)
+    }
+}
+
+private struct FlowRow: Layout {
+    var spacing: CGFloat
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        var totalWidth: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > maxWidth, x > 0 {
+                y += rowHeight + spacing
+                x = 0
+                rowHeight = 0
+            }
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+            totalWidth = max(totalWidth, x - spacing)
+        }
+        return CGSize(width: totalWidth, height: y + rowHeight)
     }
 
-    var state: State = .idle
-
-    @ObservationIgnored private let manager: CLLocationManager
-    @ObservationIgnored private var target: CLLocationCoordinate2D?
-    @ObservationIgnored private var arriveBy: Date?
-    @ObservationIgnored private let bufferMinutes: Double = 10
-    @ObservationIgnored private var didStart = false
-
-    override init() {
-        self.manager = CLLocationManager()
-        super.init()
-        manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
-    }
-
-    func start(target: CLLocationCoordinate2D, arriveBy: Date) {
-        guard !didStart else { return }
-        didStart = true
-        self.target = target
-        self.arriveBy = arriveBy
-
-        switch manager.authorizationStatus {
-        case .notDetermined:
-            state = .requestingPermission
-            manager.requestWhenInUseAuthorization()
-        case .denied, .restricted:
-            state = .denied
-        case .authorizedAlways, .authorizedWhenInUse:
-            requestLocation()
-        @unknown default:
-            state = .denied
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        var x: CGFloat = bounds.minX
+        var y: CGFloat = bounds.minY
+        var rowHeight: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > bounds.maxX, x > bounds.minX {
+                y += rowHeight + spacing
+                x = bounds.minX
+                rowHeight = 0
+            }
+            subview.place(
+                at: CGPoint(x: x, y: y),
+                proposal: ProposedViewSize(width: size.width, height: size.height)
+            )
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
         }
     }
+}
 
-    private func requestLocation() {
-        state = .computing
-        manager.requestLocation()
+// MARK: - Ticket card
+
+private struct TicketCard: View {
+    let ticket: Ticket
+    let category: BlockCategory
+    let isCopied: Bool
+    let onCopy: () -> Void
+    let onEdit: () -> Void
+
+    private var hasCode: Bool {
+        !ticket.confirmationCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        switch manager.authorizationStatus {
-        case .authorizedAlways, .authorizedWhenInUse:
-            requestLocation()
-        case .denied, .restricted:
-            state = .denied
-        default:
-            break
+    private var label: String {
+        ticket.name.isEmpty ? category.label : ticket.name
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+            HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s) {
+                Image(systemName: category.symbol)
+                    .font(Theme.Font.caption)
+                    .foregroundStyle(category.textOnSurface)
+                Text(label.uppercased())
+                    .font(Theme.Font.caption)
+                    .tracking(1.2)
+                    .foregroundStyle(Theme.Color.textSecondary)
+                Spacer(minLength: 0)
+                if hasCode {
+                    Text(isCopied ? "COPIED" : "TAP TO COPY")
+                        .font(Theme.Font.caption)
+                        .tracking(1.0)
+                        .foregroundStyle(isCopied ? Color.white : Theme.Color.accent)
+                        .padding(.horizontal, Theme.Spacing.s)
+                        .padding(.vertical, 3)
+                        .background(
+                            isCopied
+                                ? Theme.Color.accent
+                                : Theme.Color.accent.opacity(0.18),
+                            in: Capsule()
+                        )
+                }
+                Button(action: onEdit) {
+                    Image(systemName: "pencil")
+                        .font(Theme.Font.caption)
+                        .foregroundStyle(Theme.Color.textSecondary)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            Theme.Color.surfaceElevated,
+                            in: Circle()
+                        )
+                }
+                .buttonStyle(.pressable)
+                .accessibilityLabel("Edit ticket")
+            }
+
+            if hasCode {
+                Button(action: onCopy) {
+                    Text(ticket.confirmationCode)
+                        .font(Theme.Font.codeHuge)
+                        .foregroundStyle(Theme.Color.textPrimary)
+                        .minimumScaleFactor(0.55)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.pressable)
+                .accessibilityLabel("Confirmation code \(ticket.confirmationCode)")
+                .accessibilityHint(isCopied ? "Copied" : "Double tap to copy")
+            }
+
+            if hasFacts {
+                Divider()
+                    .overlay(Theme.Color.hourRule)
+                    .padding(.vertical, 2)
+                HStack(spacing: Theme.Spacing.l) {
+                    if !ticket.seat.isEmpty {
+                        fact("SEAT", value: ticket.seat)
+                    }
+                    if !ticket.gate.isEmpty {
+                        fact("GATE", value: ticket.gate)
+                    }
+                    if !ticket.holderName.isEmpty {
+                        fact("FOR", value: ticket.holderName)
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+        .padding(Theme.Spacing.l)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            Theme.Color.surface,
+            in: RoundedRectangle(cornerRadius: Theme.Radius.medium)
+        )
+    }
+
+    private var hasFacts: Bool {
+        !ticket.seat.isEmpty || !ticket.gate.isEmpty || !ticket.holderName.isEmpty
+    }
+
+    private func fact(_ label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(Theme.Font.caption)
+                .tracking(1.2)
+                .foregroundStyle(Theme.Color.textTertiary)
+            Text(value)
+                .font(Theme.Font.body)
+                .foregroundStyle(Theme.Color.textPrimary)
+                .lineLimit(1)
         }
     }
+}
 
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let location = locations.last else { return }
-        Task { [weak self] in
-            await self?.computeETA(from: location.coordinate)
-        }
+// MARK: - Preview
+
+#Preview {
+    let container = try! ModelContainer(
+        for: Block.self, Ticket.self,
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    )
+    SampleData.seedIfNeeded(context: container.mainContext)
+    let descriptor = FetchDescriptor<Block>(sortBy: [SortDescriptor(\.start)])
+    let block = (try? container.mainContext.fetch(descriptor))?
+        .first(where: { !$0.orderedTickets.isEmpty })
+        ?? Block(
+            title: "Flight LGA → ORD",
+            start: .now,
+            end: .now.addingTimeInterval(3600),
+            category: .travel
+        )
+    return NavigationStack {
+        BlockDetailView(block: block, onEdit: { })
     }
-
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: any Error) {
-        state = .stale
-    }
-
-    @MainActor
-    private func computeETA(from source: CLLocationCoordinate2D) async {
-        guard let target = self.target, let arriveBy = self.arriveBy else { return }
-        let request = MKDirections.Request()
-        request.source = MKMapItem(placemark: MKPlacemark(coordinate: source))
-        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: target))
-        request.transportType = .automobile
-
-        do {
-            let response = try await MKDirections(request: request).calculateETA()
-            let leave = arriveBy
-                .addingTimeInterval(-response.expectedTravelTime)
-                .addingTimeInterval(-bufferMinutes * 60)
-            state = .ready(leaveBy: leave, eta: response.expectedTravelTime)
-        } catch {
-            state = .stale
-        }
-    }
+    .modelContainer(container)
 }

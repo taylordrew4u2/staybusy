@@ -50,6 +50,9 @@ struct BlockCard: View {
                 if variant != .list {
                     metaRow
                 }
+                if variant == .timeline && hasDetailFlags {
+                    detailFlagsRow
+                }
             }
             .padding(.vertical, variant == .list ? Theme.Spacing.s : Theme.Spacing.m)
             .padding(.horizontal, Theme.Spacing.m)
@@ -73,6 +76,12 @@ struct BlockCard: View {
                 .font(Theme.Font.caption)
                 .tracking(1.2)
                 .foregroundStyle(Theme.Color.textSecondary)
+            if block.isFromCalendar {
+                Image(systemName: "calendar")
+                    .font(Theme.Font.caption)
+                    .foregroundStyle(Theme.Color.textTertiary)
+                    .accessibilityLabel("From Calendar")
+            }
             Spacer(minLength: Theme.Spacing.xs)
             if isCurrent {
                 Text("NOW")
@@ -114,6 +123,57 @@ struct BlockCard: View {
         }
     }
 
+    private var ticketCount: Int { block.orderedTickets.count }
+
+    private var hasDetailFlags: Bool {
+        ticketCount > 0
+            || !block.confirmationCode.isEmpty
+            || !block.attachmentFilenames.isEmpty
+            || !block.notes.isEmpty
+            || !block.links.isEmpty
+    }
+
+    private var detailFlagsRow: some View {
+        HStack(spacing: Theme.Spacing.xs) {
+            if ticketCount > 0 {
+                flagPill(
+                    symbol: "ticket.fill",
+                    label: ticketCount > 1 ? "\(ticketCount) tickets" : "Ticket"
+                )
+            } else if !block.confirmationCode.isEmpty {
+                flagPill(symbol: "ticket.fill", label: "Code")
+            }
+            if !block.attachmentFilenames.isEmpty {
+                flagPill(
+                    symbol: "paperclip",
+                    label: "\(block.attachmentFilenames.count)"
+                )
+            }
+            if !block.notes.isEmpty {
+                flagPill(symbol: "note.text", label: "Notes")
+            }
+            if !block.links.isEmpty {
+                flagPill(symbol: "link", label: "\(block.links.count)")
+            }
+        }
+        .padding(.top, 2)
+    }
+
+    private func flagPill(symbol: String, label: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: symbol)
+            Text(label)
+        }
+        .font(Theme.Font.caption)
+        .foregroundStyle(Theme.Color.textSecondary)
+        .padding(.horizontal, Theme.Spacing.s)
+        .padding(.vertical, 3)
+        .background(
+            Theme.Color.surfaceElevated,
+            in: Capsule()
+        )
+    }
+
     private var background: some View {
         Group {
             switch variant {
@@ -141,4 +201,30 @@ struct BlockCard: View {
         if hasOverlap { parts.append("Overlaps with another block") }
         return parts.joined(separator: ", ")
     }
+}
+
+#Preview("BlockCard variants") {
+    let sample = Block(
+        title: "Soundcheck",
+        start: Date().addingTimeInterval(-1800),
+        end: Date().addingTimeInterval(3600),
+        category: .gig,
+        locationName: "Brooklyn Steel",
+        confirmationCode: "BS-44721",
+        notes: "Backline ready."
+    )
+    let ticket = Ticket(name: "Crew pass", confirmationCode: "BS-44721")
+    sample.tickets = [ticket]
+
+    return VStack(spacing: Theme.Spacing.l) {
+        BlockCard(block: sample, variant: .timeline, isCurrent: true)
+            .frame(height: 140)
+        BlockCard(block: sample, variant: .compact)
+            .frame(height: 80)
+        BlockCard(block: sample, variant: .list)
+            .frame(height: 64)
+    }
+    .padding(Theme.Spacing.l)
+    .background(Theme.Color.background)
+    .preferredColorScheme(.dark)
 }

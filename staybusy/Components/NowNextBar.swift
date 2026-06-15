@@ -7,28 +7,97 @@
 //  never shows an empty state: every variant communicates a real
 //  status the user can act on.
 //
+//  When the next block has a fixed location and Location Services are
+//  authorized, the "starts in" countdown is replaced with a **leave
+//  in** countdown that subtracts the current driving ETA + a small
+//  buffer — so the prompt reflects when you actually need to head out,
+//  not when the next event begins.
+//
 
 import SwiftUI
+import CoreLocation
 
 struct NowNextBar: View {
     let allBlocks: [Block]
 
+    @State private var leaveBy = LeaveByModel()
+
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { ctx in
-            content(now: ctx.date)
+            let phase = Phase(now: ctx.date, blocks: allBlocks)
+            content(state: phase, now: ctx.date)
         }
         .padding(Theme.Spacing.m)
         .background(Theme.Color.surfaceElevated, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
         .accessibilityElement(children: .contain)
+        // Re-target the leave-by tracker whenever the routeable next
+        // block changes (different ID, new arrive-by time, or it goes
+        // away entirely). Driving from `.task(id:)` keeps location
+        // requests out of the per-second TimelineView re-render.
+        .task(id: routeableTargetSignature) {
+            syncLeaveBy()
+        }
+    }
+
+    // MARK: - Routing target
+
+    /// The next block we'd want to compute a leave-by for. We only
+    /// consider blocks today that still lie in the future and have a
+    /// real lat/lng — otherwise there's nothing to navigate to.
+    private var routeableNext: Block? {
+        let now = Date()
+        let cal = Calendar.current
+        return allBlocks
+            .filter {
+                $0.start > now
+                    && cal.isDate($0.start, inSameDayAs: now)
+                    && $0.latitude != nil
+                    && $0.longitude != nil
+            }
+            .sorted { $0.start < $1.start }
+            .first
+    }
+
+    /// A signature for `.task(id:)`. Combines the block identity with
+    /// its start time, so editing the block's start time triggers a
+    /// retarget while incidental re-renders do not.
+    private var routeableTargetSignature: String? {
+        guard let block = routeableNext,
+              let lat = block.latitude,
+              let lng = block.longitude
+        else { return nil }
+        return "\(block.persistentModelID.hashValue)-\(block.start.timeIntervalSince1970)-\(lat)-\(lng)"
+    }
+
+    private func syncLeaveBy() {
+        if let block = routeableNext,
+           let lat = block.latitude,
+           let lng = block.longitude {
+            leaveBy.retarget(
+                target: CLLocationCoordinate2D(latitude: lat, longitude: lng),
+                arriveBy: block.start
+            )
+        } else {
+            leaveBy.clear()
+        }
     }
 
     @ViewBuilder
-    private func content(now: Date) -> some View {
-        switch State(now: now, blocks: allBlocks) {
+    private func content(state: Phase, now: Date) -> some View {
+        switch state {
         case .current(let current, let next):
-            CurrentState(now: now, current: current, next: next)
+            CurrentState(
+                now: now,
+                current: current,
+                next: next,
+                leaveByState: leaveByStateForNextIfRouteable(next)
+            )
         case .between(let next):
-            BetweenState(now: now, next: next)
+            BetweenState(
+                now: now,
+                next: next,
+                leaveByState: leaveByStateForNextIfRouteable(next)
+            )
         case .doneToday(let tomorrow):
             DoneState(tomorrowFirst: tomorrow)
         case .nothing:
@@ -36,9 +105,20 @@ struct NowNextBar: View {
         }
     }
 
-    // MARK: - State
+    /// Only surface the leave-by state when the next block we'd route
+    /// to is actually the block the bar is talking about — otherwise
+    /// the countdown would describe a different destination.
+    private func leaveByStateForNextIfRouteable(_ next: Block?) -> LeaveByModel.State? {
+        guard let next else { return nil }
+        guard let target = routeableNext,
+              target.persistentModelID == next.persistentModelID
+        else { return nil }
+        return leaveBy.state
+    }
 
-    private enum State {
+    // MARK: - Phase
+
+    private enum Phase {
         case current(Block, next: Block?)
         case between(Block)
         case doneToday(Block?)
@@ -82,6 +162,7 @@ struct NowNextBar: View {
         let now: Date
         let current: Block
         let next: Block?
+        let leaveByState: LeaveByModel.State?
 
         var body: some View {
             VStack(alignment: .leading, spacing: Theme.Spacing.m) {
@@ -97,7 +178,12 @@ struct NowNextBar: View {
                 )
                 if let next {
                     Divider().background(Theme.Color.textTertiary.opacity(0.25))
-                    NextLine(label: "NEXT", next: next)
+                    NextLine(
+                        label: "NEXT",
+                        next: next,
+                        leaveByState: leaveByState,
+                        now: now
+                    )
                 }
             }
             .accessibilityLabel("Now: \(current.title). Ends in \(spokenCountdown(to: current.end, from: now)).")
@@ -107,6 +193,30 @@ struct NowNextBar: View {
     private struct BetweenState: View {
         let now: Date
         let next: Block
+        let leaveByState: LeaveByModel.State?
+
+        private var leaveBy: Date? {
+            if case .ready(let leaveBy, _) = leaveByState {
+                return leaveBy
+            }
+            return nil
+        }
+
+        private var useLeaveBy: Bool {
+            // Only surface the leave-by countdown when it's strictly
+            // earlier than the start — otherwise it just says the same
+            // thing twice. (E.g. when you're already at the venue.)
+            guard let leaveBy else { return false }
+            return leaveBy < next.start
+        }
+
+        private var primaryTarget: Date {
+            useLeaveBy ? leaveBy! : next.start
+        }
+
+        private var trailingLabel: String {
+            useLeaveBy ? "LEAVE IN" : "STARTS IN"
+        }
 
         var body: some View {
             VStack(alignment: .leading, spacing: Theme.Spacing.m) {
@@ -116,14 +226,36 @@ struct NowNextBar: View {
                     symbol: "clock",
                     eyebrow: "FREE UNTIL",
                     title: next.title,
-                    trailingLabel: "STARTS IN",
-                    trailing: countdown(from: now, to: next.start),
-                    trailingColor: Theme.Color.accent
+                    trailingLabel: trailingLabel,
+                    trailing: countdown(from: now, to: primaryTarget),
+                    trailingColor: leaveByColor
                 )
                 Divider().background(Theme.Color.textTertiary.opacity(0.25))
-                NextLine(label: "NEXT", next: next)
+                NextLine(
+                    label: "NEXT",
+                    next: next,
+                    leaveByState: leaveByState,
+                    now: now
+                )
             }
-            .accessibilityLabel("Free until \(next.title). Starts in \(spokenCountdown(to: next.start, from: now)).")
+            .accessibilityLabel(accessibilityLabel)
+        }
+
+        private var leaveByColor: Color {
+            guard useLeaveBy, let leaveBy else { return Theme.Color.accent }
+            // Inside the last 5 min before leave time, escalate to warning
+            // so a glance is enough to register "go now".
+            if leaveBy.timeIntervalSince(now) < 5 * 60 {
+                return Theme.Color.warning
+            }
+            return Theme.Color.accent
+        }
+
+        private var accessibilityLabel: String {
+            if useLeaveBy {
+                return "Free until \(next.title). Leave in \(spokenCountdown(to: primaryTarget, from: now)) to arrive on time."
+            }
+            return "Free until \(next.title). Starts in \(spokenCountdown(to: next.start, from: now))."
         }
     }
 
@@ -222,6 +354,22 @@ struct NowNextBar: View {
     private struct NextLine: View {
         let label: String
         let next: Block
+        let leaveByState: LeaveByModel.State?
+        let now: Date
+
+        private var leaveByLabel: String? {
+            switch leaveByState {
+            case .ready(let leaveBy, _) where leaveBy < next.start:
+                let mins = max(0, Int(leaveBy.timeIntervalSince(now) / 60))
+                if mins <= 0 { return "leave now" }
+                if mins < 60 { return "leave in \(mins)m" }
+                let h = mins / 60
+                let m = mins % 60
+                return m > 0 ? "leave in \(h)h \(m)m" : "leave in \(h)h"
+            default:
+                return nil
+            }
+        }
 
         var body: some View {
             HStack(spacing: Theme.Spacing.s) {
@@ -240,9 +388,15 @@ struct NowNextBar: View {
                     .foregroundStyle(Theme.Color.textPrimary)
                     .lineLimit(1)
                 Spacer(minLength: Theme.Spacing.s)
-                Text(formatTime(next.start))
-                    .font(Theme.Font.caption)
-                    .foregroundStyle(Theme.Color.textSecondary)
+                if let leaveByLabel {
+                    Text(leaveByLabel)
+                        .font(Theme.Font.caption)
+                        .foregroundStyle(Theme.Color.accent)
+                } else {
+                    Text(formatTime(next.start))
+                        .font(Theme.Font.caption)
+                        .foregroundStyle(Theme.Color.textSecondary)
+                }
             }
         }
     }

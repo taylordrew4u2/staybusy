@@ -6,6 +6,8 @@
 	<array>
 		<string>comgooglemaps</string>
 	</array>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>StayBusy syncs your iOS Calendar events into the timeline so all your blocks live in one place.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

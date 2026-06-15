@@ -17,32 +17,56 @@ struct staybusyApp: App {
             cloudKitDatabase: .private(StayBusyCloudKit.containerIdentifier)
         )
         do {
-            container = try ModelContainer(for: Block.self, configurations: cloudConfig)
+            container = try ModelContainer(
+                for: Block.self, Ticket.self,
+                configurations: cloudConfig
+            )
         } catch {
             // CloudKit setup can fail when iCloud isn't signed in, the container
             // isn't provisioned, or the simulator can't reach CloudKit. Fall back
             // to a local-only store so the app still launches.
             do {
                 let localConfig = ModelConfiguration(url: storeURL)
-                container = try ModelContainer(for: Block.self, configurations: localConfig)
+                container = try ModelContainer(
+                    for: Block.self, Ticket.self,
+                    configurations: localConfig
+                )
             } catch {
                 fatalError("Failed to create ModelContainer: \(error)")
             }
         }
-        #if DEBUG
-        SampleData.seedIfNeeded(context: container.mainContext)
-        #endif
     }
 
     enum StayBusyCloudKit {
         static let containerIdentifier = "iCloud.com.staybusy.app"
     }
 
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .task { await syncCalendarIfEnabled() }
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active {
+                        Task { await syncCalendarIfEnabled() }
+                    }
+                }
         }
         .modelContainer(container)
+    }
+
+    /// Pull Calendar events into the local store when the user has
+    /// opted in. Runs on launch and on each `.active` scenePhase
+    /// transition. Skips when the user hasn't enabled it or hasn't
+    /// granted Calendar access.
+    @MainActor
+    private func syncCalendarIfEnabled() async {
+        let enabled = UserDefaults.standard.bool(forKey: "calendarSyncEnabled")
+        guard enabled else { return }
+        let service = CalendarSyncService.shared
+        guard service.isAuthorized else { return }
+        await service.sync(context: container.mainContext)
     }
 
     /// Stores the SQLite file in the App Group container so the widget extension

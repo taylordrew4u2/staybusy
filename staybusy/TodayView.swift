@@ -16,6 +16,9 @@ struct TodayView: View {
     @Binding var selectedDate: Date
     @State private var navigationPath = NavigationPath()
     @State private var presentedSheet: EditorSheet?
+    @State private var pendingDelete: Block?
+    @State private var showingSettings = false
+    @AppStorage("calendarSyncEnabled") private var calendarSyncEnabled: Bool = false
 
     private var blocksForSelectedDay: [Block] {
         let cal = Calendar.current
@@ -50,9 +53,14 @@ struct TodayView: View {
                         EmptyStateView(
                             symbol: "calendar.badge.plus",
                             title: "Nothing scheduled",
-                            message: "Add a block to start mapping out your day.",
+                            message: calendarSyncEnabled
+                                ? "Add a block to start mapping out your day."
+                                : "Add a block, or pull events from your iOS Calendar.",
                             actionTitle: "Add a block",
-                            action: { presentedSheet = .create(suggestedDefaultInterval()) }
+                            action: { presentedSheet = .create(suggestedDefaultInterval()) },
+                            secondaryActionTitle: calendarSyncEnabled ? nil : "Sync iOS Calendar",
+                            secondaryActionSymbol: calendarSyncEnabled ? nil : "calendar",
+                            secondaryAction: calendarSyncEnabled ? nil : { showingSettings = true }
                         )
                         .frame(maxHeight: .infinity)
                     } else {
@@ -65,6 +73,15 @@ struct TodayView: View {
                             },
                             onTapBlock: { block in
                                 navigationPath.append(block)
+                            },
+                            onEditBlock: { block in
+                                presentedSheet = .edit(block)
+                            },
+                            onDuplicateBlock: { block in
+                                duplicate(block)
+                            },
+                            onDeleteBlock: { block in
+                                pendingDelete = block
                             }
                         )
                     }
@@ -81,7 +98,7 @@ struct TodayView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .appTheme()
         .tint(Theme.Color.accent)
         .sheet(item: $presentedSheet) { sheet in
             switch sheet {
@@ -93,12 +110,63 @@ struct TodayView: View {
                 }
             }
         }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
+        }
+        .confirmationDialog(
+            "Delete this block?",
+            isPresented: deletionBinding,
+            titleVisibility: .visible,
+            presenting: pendingDelete
+        ) { block in
+            Button("Delete \"\(block.title)\"", role: .destructive) {
+                delete(block)
+            }
+            Button("Cancel", role: .cancel) { pendingDelete = nil }
+        } message: { _ in
+            Text("This can't be undone.")
+        }
         .onAppear {
             LiveActivityManager.shared.sync(blocks: allBlocks)
         }
         .onChange(of: allBlocks) { _, new in
             LiveActivityManager.shared.sync(blocks: new)
         }
+    }
+
+    private var deletionBinding: Binding<Bool> {
+        Binding(
+            get: { pendingDelete != nil },
+            set: { isPresented in
+                if !isPresented { pendingDelete = nil }
+            }
+        )
+    }
+
+    private func duplicate(_ block: Block) {
+        let copy = block.makeDuplicate()
+        context.insert(copy)
+        for source in block.orderedTickets {
+            let ticket = Ticket(
+                name: source.name,
+                confirmationCode: source.confirmationCode,
+                seat: source.seat,
+                gate: source.gate,
+                holderName: source.holderName,
+                sortOrder: source.sortOrder
+            )
+            ticket.block = copy
+            context.insert(ticket)
+        }
+        try? context.save()
+        Theme.Haptic.blockSaved()
+    }
+
+    private func delete(_ block: Block) {
+        NotificationManager.shared.blockDeleted(block)
+        context.delete(block)
+        try? context.save()
+        pendingDelete = nil
     }
 
     private func suggestedDefaultInterval() -> DateInterval {
@@ -186,6 +254,9 @@ private struct TimelineScroll: View {
     let overlappingIDs: Set<PersistentIdentifier>
     let onTapOpen: (DateInterval) -> Void
     let onTapBlock: (Block) -> Void
+    let onEditBlock: (Block) -> Void
+    let onDuplicateBlock: (Block) -> Void
+    let onDeleteBlock: (Block) -> Void
 
     private let startHour = 7
     private let endHour = 24
@@ -332,6 +403,23 @@ private struct TimelineScroll: View {
                 )
             }
             .buttonStyle(.pressable)
+            .contextMenu {
+                Button {
+                    onEditBlock(b)
+                } label: {
+                    Label("Edit", systemImage: "pencil")
+                }
+                Button {
+                    onDuplicateBlock(b)
+                } label: {
+                    Label("Duplicate", systemImage: "plus.square.on.square")
+                }
+                Button(role: .destructive) {
+                    onDeleteBlock(b)
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
         case .open(let s, let e):
             OpenSlotCard(start: s, end: e) {
                 onTapOpen(DateInterval(start: s, end: e))
@@ -406,6 +494,11 @@ private struct FloatingAddButton: View {
 }
 
 #Preview {
-    TodayView(selectedDate: .constant(Date()))
-        .modelContainer(for: Block.self, inMemory: true)
+    let container = try! ModelContainer(
+        for: Block.self, Ticket.self,
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    )
+    SampleData.seedIfNeeded(context: container.mainContext)
+    return TodayView(selectedDate: .constant(Date()))
+        .modelContainer(container)
 }

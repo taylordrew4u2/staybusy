@@ -18,18 +18,23 @@ struct HomeView: View {
     @Binding var selectedDate: Date
 
     @State private var presentedSheet: EditorSheet?
+    @State private var showingSettings = false
+    @State private var navigationPath = NavigationPath()
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack {
                 Theme.Color.background
                     .ignoresSafeArea()
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: Theme.Spacing.xl) {
-                        GreetingHeader(date: Date())
-                            .padding(.horizontal, Theme.Spacing.l)
-                            .padding(.top, Theme.Spacing.s)
+                        GreetingHeader(
+                            date: Date(),
+                            onOpenSettings: { showingSettings = true }
+                        )
+                        .padding(.horizontal, Theme.Spacing.l)
+                        .padding(.top, Theme.Spacing.s)
 
                         NowNextBar(allBlocks: allBlocks)
                             .padding(.horizontal, Theme.Spacing.l)
@@ -39,6 +44,9 @@ struct HomeView: View {
                             onSeeAll: {
                                 selectedDate = Calendar.current.startOfDay(for: Date())
                                 onSelectTab(.today)
+                            },
+                            onSelectBlock: { block in
+                                navigationPath.append(block)
                             }
                         )
 
@@ -64,8 +72,13 @@ struct HomeView: View {
                 }
             }
             .navigationBarHidden(true)
+            .navigationDestination(for: Block.self) { block in
+                BlockDetailView(block: block) {
+                    presentedSheet = .edit(block)
+                }
+            }
         }
-        .preferredColorScheme(.dark)
+        .appTheme()
         .tint(Theme.Color.accent)
         .sheet(item: $presentedSheet) { sheet in
             switch sheet {
@@ -74,6 +87,9 @@ struct HomeView: View {
             case .edit(let block):
                 BlockEditorView(editing: block, suggested: nil)
             }
+        }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
         }
     }
 
@@ -127,17 +143,33 @@ struct HomeView: View {
 
 private struct GreetingHeader: View {
     let date: Date
+    let onOpenSettings: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-            Text(greeting)
-                .font(Theme.Font.body)
-                .foregroundStyle(Theme.Color.textSecondary)
-            Text(longDate)
-                .font(Theme.Font.titleLarge)
-                .foregroundStyle(Theme.Color.textPrimary)
+        HStack(alignment: .top, spacing: Theme.Spacing.m) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                Text(greeting)
+                    .font(Theme.Font.body)
+                    .foregroundStyle(Theme.Color.textSecondary)
+                Text(longDate)
+                    .font(Theme.Font.titleLarge)
+                    .foregroundStyle(Theme.Color.textPrimary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button(action: onOpenSettings) {
+                Image(systemName: "gearshape.fill")
+                    .font(Theme.Font.title)
+                    .foregroundStyle(Theme.Color.textSecondary)
+                    .frame(
+                        width: Theme.Size.minTapTarget,
+                        height: Theme.Size.minTapTarget
+                    )
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.pressable)
+            .accessibilityLabel("Settings")
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var greeting: String {
@@ -162,6 +194,7 @@ private struct GreetingHeader: View {
 private struct UpNextSection: View {
     let blocks: [Block]
     let onSeeAll: () -> Void
+    let onSelectBlock: (Block) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.m) {
@@ -175,8 +208,15 @@ private struct UpNextSection: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: Theme.Spacing.m) {
                         ForEach(Array(blocks.prefix(5)), id: \.persistentModelID) { block in
-                            UpNextCard(block: block)
-                                .frame(width: 240)
+                            Button {
+                                onSelectBlock(block)
+                            } label: {
+                                UpNextCard(block: block)
+                                    .frame(width: 240)
+                            }
+                            .buttonStyle(.pressable)
+                            .accessibilityLabel("\(block.title), \(block.category.label)")
+                            .accessibilityHint("Double tap to open block details")
                         }
                     }
                     .padding(.horizontal, Theme.Spacing.l)
@@ -206,6 +246,21 @@ private struct UpNextCard: View {
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Spacer(minLength: 0)
+            if hasFlags {
+                HStack(spacing: Theme.Spacing.xs) {
+                    if ticketCount > 0 {
+                        flag(symbol: "ticket.fill", label: ticketCount > 1 ? "\(ticketCount)" : "Ticket")
+                    } else if !block.confirmationCode.isEmpty {
+                        flag(symbol: "ticket.fill", label: "Code")
+                    }
+                    if !block.notes.isEmpty {
+                        flag(symbol: "note.text", label: "Notes")
+                    }
+                    if !block.attachmentFilenames.isEmpty {
+                        flag(symbol: "paperclip", label: "\(block.attachmentFilenames.count)")
+                    }
+                }
+            }
             HStack(spacing: Theme.Spacing.xs) {
                 Image(systemName: "clock")
                     .font(Theme.Font.caption)
@@ -216,7 +271,7 @@ private struct UpNextCard: View {
             }
         }
         .padding(Theme.Spacing.m)
-        .frame(height: 132, alignment: .topLeading)
+        .frame(height: 156, alignment: .topLeading)
         .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
         .overlay(alignment: .leading) {
             Rectangle()
@@ -225,6 +280,27 @@ private struct UpNextCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: 2))
                 .padding(.vertical, Theme.Spacing.s)
         }
+    }
+
+    private var ticketCount: Int { block.orderedTickets.count }
+
+    private var hasFlags: Bool {
+        ticketCount > 0
+            || !block.confirmationCode.isEmpty
+            || !block.notes.isEmpty
+            || !block.attachmentFilenames.isEmpty
+    }
+
+    private func flag(symbol: String, label: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: symbol)
+            Text(label)
+        }
+        .font(Theme.Font.caption)
+        .foregroundStyle(Theme.Color.textSecondary)
+        .padding(.horizontal, Theme.Spacing.s)
+        .padding(.vertical, 3)
+        .background(Theme.Color.surfaceElevated, in: Capsule())
     }
 
     private var timeLabel: String {
@@ -430,9 +506,14 @@ private struct SectionHeader: View {
 }
 
 #Preview {
-    HomeView(
+    let container = try! ModelContainer(
+        for: Block.self, Ticket.self,
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    )
+    SampleData.seedIfNeeded(context: container.mainContext)
+    return HomeView(
         onSelectTab: { _ in },
         selectedDate: .constant(Date())
     )
-    .modelContainer(for: Block.self, inMemory: true)
+    .modelContainer(container)
 }

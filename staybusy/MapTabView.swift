@@ -21,15 +21,35 @@ struct MapTabView: View {
     @State private var navigationPath = NavigationPath()
     @State private var presentedSheet: EditorSheet?
     @State private var cameraPosition: MapCameraPosition = .automatic
+    @State private var scope: Scope = .trip
 
-    private var blocksForDay: [Block] {
-        allBlocks
-            .filter { Calendar.current.isDate($0.start, inSameDayAs: selectedDate) }
-            .sorted { $0.start < $1.start }
+    enum Scope: String, CaseIterable, Identifiable {
+        case day, trip
+        var id: String { rawValue }
+        var label: String {
+            switch self {
+            case .day: return "Day"
+            case .trip: return "Trip"
+            }
+        }
+    }
+
+    /// The set of blocks the map is currently showing, filtered by
+    /// scope. Day mode honours the day picker; Trip mode shows every
+    /// block in the store with a real location.
+    private var blocksInScope: [Block] {
+        switch scope {
+        case .day:
+            return allBlocks
+                .filter { Calendar.current.isDate($0.start, inSameDayAs: selectedDate) }
+                .sorted { $0.start < $1.start }
+        case .trip:
+            return allBlocks.sorted { $0.start < $1.start }
+        }
     }
 
     private var blocksWithCoords: [Block] {
-        blocksForDay.filter { $0.latitude != nil && $0.longitude != nil }
+        blocksInScope.filter { $0.latitude != nil && $0.longitude != nil }
     }
 
     var body: some View {
@@ -38,7 +58,13 @@ struct MapTabView: View {
                 Theme.Color.background.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    DayPickerBar(selectedDate: $selectedDate)
+                    scopePicker
+                        .padding(.horizontal, Theme.Spacing.l)
+                        .padding(.top, Theme.Spacing.s)
+                        .padding(.bottom, Theme.Spacing.s)
+                    if scope == .day {
+                        DayPickerBar(selectedDate: $selectedDate)
+                    }
                     ZStack(alignment: .topTrailing) {
                         mapView
                         polylineButton
@@ -68,7 +94,7 @@ struct MapTabView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .appTheme()
         .tint(Theme.Color.accent)
         .sheet(item: $presentedSheet) { sheet in
             switch sheet {
@@ -85,6 +111,20 @@ struct MapTabView: View {
             dismissSelection()
             refitCamera()
         }
+        .onChange(of: scope) { _, _ in
+            dismissSelection()
+            refitCamera()
+        }
+    }
+
+    private var scopePicker: some View {
+        Picker("Scope", selection: $scope) {
+            ForEach(Scope.allCases) { option in
+                Text(option.label).tag(option)
+            }
+        }
+        .pickerStyle(.segmented)
+        .accessibilityLabel("Map scope")
     }
 
     private func dismissSelection() {
@@ -128,11 +168,13 @@ struct MapTabView: View {
 
     @ViewBuilder
     private var emptyOverlay: some View {
-        if blocksForDay.isEmpty {
+        if blocksInScope.isEmpty {
             EmptyStateView(
                 symbol: "mappin.slash",
                 title: "Nothing scheduled",
-                message: "Add a block to see it on the map.",
+                message: scope == .day
+                    ? "Add a block to see it on the map."
+                    : "Add a block — every located block on the trip will appear here.",
                 actionTitle: "Add a block",
                 action: { presentedSheet = .create(suggestedDefaultInterval()) }
             )
@@ -143,7 +185,9 @@ struct MapTabView: View {
             EmptyStateView(
                 symbol: "mappin.slash",
                 title: "No locations yet",
-                message: "Add a location to one of today's blocks to see it here.",
+                message: scope == .day
+                    ? "Add a location to one of today's blocks to see it here."
+                    : "Add a location to a block — it'll appear on the trip map.",
                 actionTitle: "Add a block",
                 action: { presentedSheet = .create(suggestedDefaultInterval()) }
             )
