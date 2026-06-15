@@ -73,12 +73,28 @@ final class CalendarSyncService {
     /// surfacing in the UI. Throws nothing — failures map to no-ops.
     @discardableResult
     func sync(context: ModelContext) async -> SyncResult {
+        await sync(context: context, trip: nil)
+    }
+
+    /// Trip-scoped variant: when `trip` is non-nil, the sync window is
+    /// the trip's full date range (instead of the rolling default) and
+    /// every imported event is attached to the trip.
+    @discardableResult
+    func sync(context: ModelContext, trip: Trip?) async -> SyncResult {
         guard isAuthorized else { return .init() }
 
         let now = Date()
         let cal = Calendar.current
-        let windowStart = cal.date(byAdding: .day, value: -pastDays, to: now) ?? now
-        let windowEnd = cal.date(byAdding: .day, value: futureDays, to: now) ?? now
+        let windowStart: Date
+        let windowEnd: Date
+        if let trip {
+            let range = trip.dateRange
+            windowStart = range.start
+            windowEnd = range.end
+        } else {
+            windowStart = cal.date(byAdding: .day, value: -pastDays, to: now) ?? now
+            windowEnd = cal.date(byAdding: .day, value: futureDays, to: now) ?? now
+        }
 
         let predicate = store.predicateForEvents(
             withStart: windowStart,
@@ -117,8 +133,14 @@ final class CalendarSyncService {
                 if applyUpdates(from: event, to: block) {
                     result.updated += 1
                 }
+                // Late-attach to the trip if we synced loose events
+                // before the trip existed.
+                if let trip, block.trip == nil {
+                    block.trip = trip
+                }
             } else {
                 let block = makeBlock(from: event)
+                block.trip = trip
                 context.insert(block)
                 result.inserted += 1
             }

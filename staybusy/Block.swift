@@ -55,6 +55,19 @@ final class Block {
     @Relationship(deleteRule: .cascade, inverse: \Ticket.block)
     var tickets: [Ticket]? = []
 
+    /// CloudKit-synced binary payloads for `attachmentFilenames`. On
+    /// any signed-in device, `AttachmentStore.materialize(...)` writes
+    /// these to the local Documents directory so the existing
+    /// URL-based view code finds the files. Cascade-deletes with the
+    /// block.
+    @Relationship(deleteRule: .cascade, inverse: \BlockAttachment.block)
+    var attachments: [BlockAttachment]? = []
+
+    /// Optional parent trip. Loose blocks (no trip) still render in
+    /// Today and Map; the Trip tab filters by the active trip. The
+    /// inverse lives on Trip so we can ask `trip.blocks?` directly.
+    var trip: Trip?
+
     /// Convenience: the tickets sorted by `sortOrder`, with empty
     /// entries filtered out. Defensive against the optional array
     /// CloudKit requires us to declare.

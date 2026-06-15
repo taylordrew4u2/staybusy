@@ -9,6 +9,8 @@
 
 import SwiftUI
 import SwiftData
+import PhotosUI
+import UIKit
 
 struct HomeView: View {
     @Environment(\.modelContext) private var context
@@ -20,6 +22,12 @@ struct HomeView: View {
     @State private var presentedSheet: EditorSheet?
     @State private var showingSettings = false
     @State private var navigationPath = NavigationPath()
+
+    // Boarding-pass import state
+    @State private var boardingPassItem: PhotosPickerItem?
+    @State private var boardingPassPickerOpen = false
+    @State private var isImportingPass = false
+    @State private var importBanner: String?
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
@@ -38,6 +46,13 @@ struct HomeView: View {
 
                         NowNextBar(allBlocks: allBlocks)
                             .padding(.horizontal, Theme.Spacing.l)
+
+                        BoardingPassImportCard(
+                            isImporting: isImportingPass,
+                            statusMessage: importBanner,
+                            onTap: { boardingPassPickerOpen = true }
+                        )
+                        .padding(.horizontal, Theme.Spacing.l)
 
                         UpNextSection(
                             blocks: upcomingBlocks,
@@ -91,6 +106,90 @@ struct HomeView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }
+        .photosPicker(
+            isPresented: $boardingPassPickerOpen,
+            selection: $boardingPassItem,
+            matching: .images
+        )
+        .onChange(of: boardingPassItem) { _, item in
+            guard let item else { return }
+            Task { await importBoardingPass(from: item) }
+        }
+    }
+
+    // MARK: - Boarding pass import
+    //
+    // Turn a single photo into a fully-formed Travel block: OCR fills
+    // ticket fields, the image becomes a synced attachment, and the
+    // user lands in the block's detail view ready to adjust times.
+
+    @MainActor
+    private func importBoardingPass(from item: PhotosPickerItem) async {
+        defer { boardingPassItem = nil }
+        isImportingPass = true
+        importBanner = "Reading boarding pass\u{2026}"
+
+        guard let data = try? await item.loadTransferable(type: Data.self),
+              let image = UIImage(data: data) else {
+            isImportingPass = false
+            importBanner = "Couldn't read that photo. Try another one."
+            return
+        }
+
+        let draft = await TicketScanner.scan(image)
+
+        // Pick reasonable defaults — round to the next hour, default
+        // two-hour window so it's visible on the timeline. The user can
+        // adjust once they land in the editor.
+        let cal = Calendar.current
+        let now = Date()
+        let comps = cal.dateComponents([.year, .month, .day, .hour], from: now)
+        let nextHour = cal.date(from: comps)?.addingTimeInterval(3600) ?? now
+        let title = draft.name.isEmpty ? "Flight" : draft.name
+
+        let block = Block(
+            title: title,
+            start: nextHour,
+            end: nextHour.addingTimeInterval(2 * 3600),
+            category: .travel
+        )
+        context.insert(block)
+
+        // Persist the image as a synced attachment.
+        if let jpegData = image.jpegData(compressionQuality: 0.85),
+           let url = AttachmentStore.attach(
+               data: jpegData,
+               extension: "jpg",
+               to: block,
+               in: context
+           ) {
+            block.attachmentFilenames.append(url.lastPathComponent)
+        }
+
+        // Persist the ticket itself if OCR produced anything.
+        if !draft.isEmpty {
+            let ticket = Ticket(
+                name: draft.name,
+                confirmationCode: draft.confirmationCode,
+                seat: draft.seat,
+                gate: draft.gate,
+                holderName: draft.holderName,
+                sortOrder: 0
+            )
+            ticket.block = block
+            context.insert(ticket)
+        }
+
+        try? context.save()
+
+        await NotificationManager.shared.blockCreated(block)
+
+        isImportingPass = false
+        importBanner = draft.isEmpty
+            ? "Photo added — confirm the details."
+            : "Ticket filled — confirm the time."
+        Theme.Haptic.blockSaved()
+        navigationPath.append(block)
     }
 
     // MARK: - Derived data
@@ -476,6 +575,76 @@ private struct StatTile: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Theme.Spacing.m)
         .background(Theme.Color.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.medium))
+    }
+}
+
+// MARK: - Boarding pass import card
+//
+// Tap → photo library. Lifts the ticket-scan flow out of the
+// per-block editor so importing a boarding pass is two taps from cold:
+// open StayBusy → tap this card → pick the photo.
+
+private struct BoardingPassImportCard: View {
+    let isImporting: Bool
+    let statusMessage: String?
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+                HStack(alignment: .top, spacing: Theme.Spacing.m) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: Theme.Radius.small)
+                            .fill(Theme.Color.accent.opacity(0.18))
+                            .frame(width: 40, height: 40)
+                        Image(systemName: "airplane.departure")
+                            .font(Theme.Font.title)
+                            .foregroundStyle(Theme.Color.accent)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Scan a boarding pass")
+                            .font(Theme.Font.title)
+                            .foregroundStyle(Theme.Color.textPrimary)
+                        Text("Pick from photos — StayBusy fills the flight, gate, seat, and code.")
+                            .font(Theme.Font.caption)
+                            .foregroundStyle(Theme.Color.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(Theme.Font.title)
+                        .foregroundStyle(Theme.Color.textTertiary)
+                }
+                if isImporting {
+                    HStack(spacing: Theme.Spacing.s) {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .tint(Theme.Color.accent)
+                        Text(statusMessage ?? "Reading\u{2026}")
+                            .font(Theme.Font.caption)
+                            .foregroundStyle(Theme.Color.textSecondary)
+                    }
+                } else if let statusMessage {
+                    Text(statusMessage)
+                        .font(Theme.Font.caption)
+                        .foregroundStyle(Theme.Color.textSecondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .padding(Theme.Spacing.m)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                Theme.Color.surface,
+                in: RoundedRectangle(cornerRadius: Theme.Radius.medium)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Radius.medium)
+                    .stroke(Theme.Color.accent.opacity(0.25), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.pressable)
+        .disabled(isImporting)
+        .accessibilityLabel("Scan a boarding pass from photos")
     }
 }
 

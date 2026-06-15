@@ -15,6 +15,7 @@ import SwiftData
 
 struct TripTabView: View {
     @Query(sort: \Block.start, order: .forward) private var allBlocks: [Block]
+    @Query(sort: \Trip.startDate, order: .reverse) private var trips: [Trip]
     let onSelectDay: (Date) -> Void
 
     @State private var presentedSheet: EditorSheet?
@@ -22,19 +23,53 @@ struct TripTabView: View {
     @State private var pendingDelete: Block?
     @State private var searchText: String = ""
     @State private var showingSettings = false
+    @State private var showingTripSheet = false
+    @State private var tripBeingEdited: Trip?
     @Environment(\.modelContext) private var context
     @AppStorage("calendarSyncEnabled") private var calendarSyncEnabled: Bool = false
+    @AppStorage("activeTripID") private var activeTripID: String = ""
+
+    /// The trip whose agenda is on screen. We resolve the persisted
+    /// `activeTripID` against the current `trips` list; if that ID
+    /// doesn't match anything (deleted on another device, never set),
+    /// fall back to the most recent trip.
+    private var activeTrip: Trip? {
+        if let id = PersistentIdentifier.decode(activeTripID),
+           let trip = trips.first(where: { $0.persistentModelID == id }) {
+            return trip
+        }
+        return trips.first
+    }
+
+    /// Blocks scoped to the active trip. With no trip selected, all
+    /// blocks are in scope so previous behaviour is preserved.
+    private var scopedBlocks: [Block] {
+        guard let trip = activeTrip else { return allBlocks }
+        let range = trip.dateRange
+        return allBlocks.filter { block in
+            if let t = block.trip, t.persistentModelID == trip.persistentModelID {
+                return true
+            }
+            // Also include loose blocks that fall in the trip window so
+            // you can still see ad-hoc additions without having to
+            // manually attach them.
+            return block.trip == nil
+                && block.start < range.end
+                && block.end > range.start
+        }
+    }
 
     private var filteredBlocks: [Block] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return allBlocks }
-        return allBlocks.filter { $0.matches(query) }
+        guard !query.isEmpty else { return scopedBlocks }
+        return scopedBlocks.filter { $0.matches(query) }
     }
 
-    /// Summary built from the full trip so trip-wide stats (days,
-    /// totals, thinnest day, spend) stay stable while you search.
+    /// Summary built from the active trip's blocks so trip-wide stats
+    /// (days, totals, thinnest day, spend) reflect what's actually
+    /// on screen.
     private var fullSummary: TripSummary {
-        TripSummary(blocks: allBlocks)
+        TripSummary(blocks: scopedBlocks)
     }
 
     /// Summary used by the agenda body. With a search active this only
@@ -53,16 +88,14 @@ struct TripTabView: View {
             ZStack {
                 Theme.Color.background.ignoresSafeArea()
 
-                if fullSummary.days.isEmpty {
+                if trips.isEmpty {
                     EmptyStateView(
                         symbol: "suitcase",
-                        title: "No trip scheduled",
-                        message: calendarSyncEnabled
-                            ? "Add a block to start mapping out your trip."
-                            : "Add a block, or pull events from your iOS Calendar.",
-                        actionTitle: "Add a block",
-                        action: { presentedSheet = .create(suggestedInterval()) },
-                        secondaryActionTitle: calendarSyncEnabled ? nil : "Sync iOS Calendar",
+                        title: "Plan a trip",
+                        message: "Create a trip to group your blocks. StayBusy can also pull events from those dates straight out of your iOS Calendar.",
+                        actionTitle: "Create a trip",
+                        action: { presentTripSheet(editing: nil) },
+                        secondaryActionTitle: calendarSyncEnabled ? nil : "Turn on Calendar sync",
                         secondaryActionSymbol: calendarSyncEnabled ? nil : "calendar",
                         secondaryAction: calendarSyncEnabled ? nil : { showingSettings = true }
                     )
@@ -86,10 +119,13 @@ struct TripTabView: View {
                 placement: .navigationBarDrawer(displayMode: .automatic),
                 prompt: "Search blocks, tickets, locations"
             )
-            .navigationTitle("Trip")
+            .navigationTitle(activeTrip?.name ?? "Trip")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
-                if !fullSummary.days.isEmpty {
+                if !trips.isEmpty {
+                    ToolbarItem(placement: .topBarLeading) {
+                        tripSwitcherMenu
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             presentedSheet = .create(suggestedInterval())
@@ -121,13 +157,20 @@ struct TripTabView: View {
         .sheet(item: $presentedSheet) { sheet in
             switch sheet {
             case .create(let interval):
-                BlockEditorView(editing: nil, suggested: interval)
+                BlockEditorView(
+                    editing: nil,
+                    suggested: interval,
+                    defaultTrip: activeTrip
+                )
             case .edit(let block):
                 BlockEditorView(editing: block, suggested: nil)
             }
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
+        }
+        .sheet(isPresented: $showingTripSheet) {
+            CreateTripSheet(editing: tripBeingEdited)
         }
         .confirmationDialog(
             "Delete this block?",
@@ -141,6 +184,82 @@ struct TripTabView: View {
             Button("Cancel", role: .cancel) { pendingDelete = nil }
         } message: { _ in
             Text("This can't be undone.")
+        }
+    }
+
+    // MARK: - Trip switcher
+
+    @ViewBuilder
+    private var tripSwitcherMenu: some View {
+        Menu {
+            if let trip = activeTrip {
+                Section(trip.name) {
+                    Button {
+                        presentTripSheet(editing: trip)
+                    } label: {
+                        Label("Edit trip", systemImage: "pencil")
+                    }
+                    Button(role: .destructive) {
+                        deleteTrip(trip)
+                    } label: {
+                        Label("Delete trip", systemImage: "trash")
+                    }
+                }
+            }
+            if trips.count > 1 {
+                Section("Switch to") {
+                    ForEach(trips) { trip in
+                        Button {
+                            switchToTrip(trip)
+                        } label: {
+                            if trip.persistentModelID == activeTrip?.persistentModelID {
+                                Label(trip.name, systemImage: "checkmark")
+                            } else {
+                                Text(trip.name)
+                            }
+                        }
+                    }
+                }
+            }
+            Button {
+                presentTripSheet(editing: nil)
+            } label: {
+                Label("New trip", systemImage: "plus")
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "suitcase.fill")
+                    .font(Theme.Font.title)
+                Image(systemName: "chevron.down")
+                    .font(.caption2)
+            }
+            .foregroundStyle(Theme.Color.accent)
+            .frame(
+                width: Theme.Size.minTapTarget + 12,
+                height: Theme.Size.minTapTarget
+            )
+            .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Trip menu")
+    }
+
+    private func presentTripSheet(editing: Trip?) {
+        tripBeingEdited = editing
+        showingTripSheet = true
+    }
+
+    private func switchToTrip(_ trip: Trip) {
+        activeTripID = trip.persistentModelID.encodedURIString
+    }
+
+    private func deleteTrip(_ trip: Trip) {
+        // The `.nullify` rule on Trip.blocks means blocks survive and
+        // become loose again — the user's schedule isn't lost just
+        // because the trip wrapper goes away.
+        context.delete(trip)
+        try? context.save()
+        if activeTripID == trip.persistentModelID.encodedURIString {
+            activeTripID = ""
         }
     }
 

@@ -18,7 +18,7 @@ struct staybusyApp: App {
         )
         do {
             container = try ModelContainer(
-                for: Block.self, Ticket.self,
+                for: Block.self, Ticket.self, BlockAttachment.self, Trip.self,
                 configurations: cloudConfig
             )
         } catch {
@@ -28,7 +28,7 @@ struct staybusyApp: App {
             do {
                 let localConfig = ModelConfiguration(url: storeURL)
                 container = try ModelContainer(
-                    for: Block.self, Ticket.self,
+                    for: Block.self, Ticket.self, BlockAttachment.self, Trip.self,
                     configurations: localConfig
                 )
             } catch {
@@ -46,7 +46,11 @@ struct staybusyApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .task { await syncCalendarIfEnabled() }
+                .task {
+                    UbiquitousSettings.shared.start()
+                    SampleData.purgeSeededBlocksIfNeeded(context: container.mainContext)
+                    await syncCalendarIfEnabled()
+                }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active {
                         Task { await syncCalendarIfEnabled() }
@@ -58,15 +62,36 @@ struct staybusyApp: App {
 
     /// Pull Calendar events into the local store when the user has
     /// opted in. Runs on launch and on each `.active` scenePhase
-    /// transition. Skips when the user hasn't enabled it or hasn't
-    /// granted Calendar access.
+    /// transition. When the user has an active trip we sync scoped to
+    /// that trip's date range and attach pulled events to it; with no
+    /// active trip we fall back to the rolling default window.
     @MainActor
     private func syncCalendarIfEnabled() async {
         let enabled = UserDefaults.standard.bool(forKey: "calendarSyncEnabled")
         guard enabled else { return }
         let service = CalendarSyncService.shared
         guard service.isAuthorized else { return }
-        await service.sync(context: container.mainContext)
+        let context = container.mainContext
+        await service.sync(context: context, trip: activeTrip(in: context))
+    }
+
+    /// Resolve the persisted `activeTripID` to its `Trip` model in the
+    /// given context, falling back to the most recent trip when the
+    /// stored ID doesn't match anything.
+    @MainActor
+    private func activeTrip(in context: ModelContext) -> Trip? {
+        let descriptor = FetchDescriptor<Trip>(
+            sortBy: [SortDescriptor(\.startDate, order: .reverse)]
+        )
+        guard let trips = try? context.fetch(descriptor), !trips.isEmpty else {
+            return nil
+        }
+        let raw = UserDefaults.standard.string(forKey: "activeTripID") ?? ""
+        if let id = PersistentIdentifier.decode(raw),
+           let trip = trips.first(where: { $0.persistentModelID == id }) {
+            return trip
+        }
+        return trips.first
     }
 
     /// Stores the SQLite file in the App Group container so the widget extension

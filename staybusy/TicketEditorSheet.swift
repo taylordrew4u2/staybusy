@@ -309,14 +309,17 @@ struct TicketEditorSheet: View {
 
     private func attach(image: UIImage, preferredExtension ext: String) {
         guard let data = image.jpegData(compressionQuality: 0.85) else { return }
-        guard let saved = AttachmentStore.save(data: data, extension: ext) else { return }
+        let saved = AttachmentStore.attach(
+            data: data, extension: ext, to: block, in: context
+        )
+        guard let saved else { return }
         addAttachment(filename: saved.lastPathComponent)
     }
 
     private func attach(fileURL: URL) {
         let needsScope = fileURL.startAccessingSecurityScopedResource()
         defer { if needsScope { fileURL.stopAccessingSecurityScopedResource() } }
-        guard let saved = AttachmentStore.copy(from: fileURL) else { return }
+        guard let saved = AttachmentStore.attach(from: fileURL, to: block, in: context) else { return }
         addAttachment(filename: saved.lastPathComponent)
     }
 

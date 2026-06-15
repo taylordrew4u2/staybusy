@@ -2,11 +2,93 @@
 //  SampleData.swift
 //  staybusy
 //
+//  Demo data is no longer seeded into production. This file now hosts
+//  a one-shot cleanup that removes the previously-shipped sample
+//  blocks from any user's store on first launch. It's also used by
+//  Xcode previews to populate an in-memory container.
+//
 
 import Foundation
 import SwiftData
 
 enum SampleData {
+    /// (title, locationName) pairs that uniquely identify the blocks
+    /// the old `seedIfNeeded` planted. Matching on both fields keeps us
+    /// from accidentally deleting a real user's block that happens to
+    /// share one of these titles.
+    private static let knownSeedFingerprints: [(title: String, location: String)] = [
+        ("Hotel breakfast", "The Standard"),
+        ("Travel to venue", "Brooklyn Steel"),
+        ("Soundcheck", "Brooklyn Steel"),
+        ("Green room rest", "Brooklyn Steel"),
+        ("Show", "Brooklyn Steel"),
+        ("Flight LGA → ORD", "LaGuardia Airport"),
+        ("Lunch w/ promoter", "Au Cheval"),
+        ("Radio interview", "WBEZ Studios"),
+    ]
+
+    private static let cleanupKey = "staybusy.didCleanupSampleData_v1"
+
+    /// One-shot cleanup. Idempotent per device — the guard flag in
+    /// `UserDefaults` makes re-runs no-ops. Tickets and attachments
+    /// cascade with the block delete.
+    @MainActor
+    static func purgeSeededBlocksIfNeeded(context: ModelContext) {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: cleanupKey) else { return }
+
+        let descriptor = FetchDescriptor<Block>()
+        guard let blocks = try? context.fetch(descriptor) else {
+            defaults.set(true, forKey: cleanupKey)
+            return
+        }
+
+        var removed = 0
+        for block in blocks where isLikelyAFakeSeed(block) {
+            NotificationManager.shared.blockDeleted(block)
+            context.delete(block)
+            removed += 1
+        }
+        if removed > 0 {
+            try? context.save()
+        }
+        defaults.set(true, forKey: cleanupKey)
+    }
+
+    private static func isLikelyAFakeSeed(_ block: Block) -> Bool {
+        // Calendar-imported blocks are real user data even if a title
+        // happens to match a fingerprint. Only purge native (non-iCal)
+        // blocks.
+        guard !block.isFromCalendar else { return false }
+        return knownSeedFingerprints.contains { fingerprint in
+            block.title == fingerprint.title
+                && block.locationName == fingerprint.location
+        }
+    }
+
+    /// Hard reset — used by the Settings "Delete all blocks" action.
+    /// Removes every Block (and via cascade rules every Ticket and
+    /// BlockAttachment) but leaves trips intact so the user's date
+    /// containers survive.
+    @MainActor
+    static func deleteAllBlocks(context: ModelContext) {
+        let descriptor = FetchDescriptor<Block>()
+        guard let blocks = try? context.fetch(descriptor) else { return }
+        for block in blocks {
+            NotificationManager.shared.blockDeleted(block)
+            context.delete(block)
+        }
+        try? context.save()
+    }
+}
+
+// MARK: - Preview seeding
+//
+// Used by SwiftUI previews via `SampleData.seedIfNeeded(context:)` —
+// keeps developer tooling working while production no longer seeds
+// anything on launch.
+
+extension SampleData {
     static func seedIfNeeded(context: ModelContext) {
         let descriptor = FetchDescriptor<Block>()
         let existing = (try? context.fetchCount(descriptor)) ?? 0
@@ -20,8 +102,6 @@ enum SampleData {
             cal.date(bySettingHour: hour, minute: minute, second: 0, of: day) ?? day
         }
 
-        // (block, tickets-to-attach) — tickets are inserted after the
-        // block so the relationship can be set in one place.
         let plan: [(Block, [Ticket])] = [
             (
                 Block(
@@ -31,21 +111,7 @@ enum SampleData {
                     category: .food,
                     locationName: "The Standard",
                     address: "25 Cooper Square, New York, NY",
-                    cost: 28,
-                    phone: "(212) 475-5700",
-                    website: "standardhotels.com"
-                ),
-                []
-            ),
-            (
-                Block(
-                    title: "Travel to venue",
-                    start: at(today, 11, 30),
-                    end: at(today, 12, 30),
-                    category: .travel,
-                    locationName: "Brooklyn Steel",
-                    cost: 32,
-                    currencyCode: "USD"
+                    cost: 28
                 ),
                 []
             ),
@@ -58,39 +124,11 @@ enum SampleData {
                     locationName: "Brooklyn Steel",
                     address: "319 Frost St, Brooklyn, NY",
                     confirmationCode: "BS-44721",
-                    notes: "Backline ready. Talk to Mara about monitors.",
-                    phone: "(347) 529-6696",
-                    website: "bkstl.com"
+                    notes: "Backline ready."
                 ),
                 [
-                    Ticket(
-                        name: "Crew pass",
-                        confirmationCode: "BS-44721",
-                        holderName: "Crew",
-                        sortOrder: 0
-                    )
+                    Ticket(name: "Crew pass", confirmationCode: "BS-44721", sortOrder: 0)
                 ]
-            ),
-            (
-                Block(
-                    title: "Green room rest",
-                    start: at(today, 16, 0),
-                    end: at(today, 18, 30),
-                    category: .rest,
-                    locationName: "Brooklyn Steel"
-                ),
-                []
-            ),
-            (
-                Block(
-                    title: "Show",
-                    start: at(today, 21, 0),
-                    end: at(today, 23, 0),
-                    category: .gig,
-                    locationName: "Brooklyn Steel",
-                    notes: "Doors 8, openers 8:30, on stage 9."
-                ),
-                []
             ),
             (
                 Block(
@@ -99,10 +137,7 @@ enum SampleData {
                     end: at(tomorrow, 12, 0),
                     category: .travel,
                     locationName: "LaGuardia Airport",
-                    confirmationCode: "DL-AB12CD",
-                    cost: 248,
-                    phone: "(800) 221-1212",
-                    website: "delta.com"
+                    confirmationCode: "DL-AB12CD"
                 ),
                 [
                     Ticket(
@@ -110,39 +145,6 @@ enum SampleData {
                         confirmationCode: "DL-AB12CD",
                         seat: "12A",
                         gate: "B23",
-                        holderName: "You",
-                        sortOrder: 0
-                    )
-                ]
-            ),
-            (
-                Block(
-                    title: "Lunch w/ promoter",
-                    start: at(tomorrow, 13, 30),
-                    end: at(tomorrow, 14, 45),
-                    category: .social,
-                    locationName: "Au Cheval",
-                    address: "800 W Randolph St, Chicago, IL",
-                    cost: 65,
-                    phone: "(312) 929-4580",
-                    website: "auchevaldiner.com"
-                ),
-                []
-            ),
-            (
-                Block(
-                    title: "Radio interview",
-                    start: at(tomorrow, 16, 0),
-                    end: at(tomorrow, 16, 45),
-                    category: .work,
-                    locationName: "WBEZ Studios"
-                ),
-                [
-                    Ticket(
-                        name: "Studio entry",
-                        confirmationCode: "WBEZ-5512",
-                        gate: "North entrance",
-                        holderName: "Guest list",
                         sortOrder: 0
                     )
                 ]

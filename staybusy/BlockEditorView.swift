@@ -13,15 +13,18 @@ import Observation
 struct BlockEditorView: View {
     let editing: Block?
     let suggested: DateInterval?
+    let defaultTrip: Trip?
     let onDelete: (() -> Void)?
 
     init(
         editing: Block?,
         suggested: DateInterval?,
+        defaultTrip: Trip? = nil,
         onDelete: (() -> Void)? = nil
     ) {
         self.editing = editing
         self.suggested = suggested
+        self.defaultTrip = defaultTrip
         self.onDelete = onDelete
     }
 
@@ -201,6 +204,12 @@ struct BlockEditorView: View {
                 website: trimmedWebsite
             )
             context.insert(new)
+            // Auto-associate with the trip the editor was opened from
+            // so it appears in that trip's agenda without the user
+            // having to manually file it.
+            if let defaultTrip {
+                new.trip = defaultTrip
+            }
             resultBlock = new
         }
         syncTickets(into: resultBlock)

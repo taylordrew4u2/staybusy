@@ -20,6 +20,7 @@ struct SettingsView: View {
 
     @State private var syncStatus: SyncStatus = .idle
     @State private var lastSummary: String?
+    @State private var confirmingDeleteAll = false
 
     private var mode: ThemeMode {
         get { ThemeMode(rawValue: themeModeRaw) ?? .dark }
@@ -60,6 +61,12 @@ struct SettingsView: View {
                             .padding(.horizontal, Theme.Spacing.l)
 
                         calendarSection
+                            .padding(.horizontal, Theme.Spacing.l)
+
+                        SectionLabel(title: "DATA")
+                            .padding(.horizontal, Theme.Spacing.l)
+
+                        dataSection
                             .padding(.horizontal, Theme.Spacing.l)
                     }
                     .padding(.top, Theme.Spacing.l)
@@ -198,9 +205,113 @@ struct SettingsView: View {
             }
         }
         syncStatus = .syncing
-        let result = await service.sync(context: context)
+        // Use the active trip's window when one is selected so the
+        // Sync-Now button mirrors the launch-time behaviour. With no
+        // trip, the service falls back to the rolling window.
+        let result = await service.sync(context: context, trip: resolvedActiveTrip)
         lastSummary = result.summary
         syncStatus = .ok
+        Theme.Haptic.blockSaved()
+    }
+
+    private var resolvedActiveTrip: Trip? {
+        let raw = UserDefaults.standard.string(forKey: "activeTripID") ?? ""
+        let descriptor = FetchDescriptor<Trip>(
+            sortBy: [SortDescriptor(\.startDate, order: .reverse)]
+        )
+        guard let trips = try? context.fetch(descriptor), !trips.isEmpty else {
+            return nil
+        }
+        if let id = PersistentIdentifier.decode(raw),
+           let trip = trips.first(where: { $0.persistentModelID == id }) {
+            return trip
+        }
+        return trips.first
+    }
+
+    // MARK: - Data section
+
+    @ViewBuilder
+    private var dataSection: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.m) {
+            Button {
+                purgeSampleData()
+            } label: {
+                HStack(alignment: .top, spacing: Theme.Spacing.m) {
+                    Image(systemName: "wand.and.sparkles")
+                        .font(Theme.Font.title)
+                        .foregroundStyle(Theme.Color.accent)
+                        .frame(width: 32, height: 32)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Clear sample data")
+                            .font(Theme.Font.title)
+                            .foregroundStyle(Theme.Color.textPrimary)
+                        Text("Remove the demo blocks (Hotel breakfast, Soundcheck, Flight LGA \u{2192} ORD\u{2026}) that shipped with earlier builds.")
+                            .font(Theme.Font.caption)
+                            .foregroundStyle(Theme.Color.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .multilineTextAlignment(.leading)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(Theme.Spacing.m)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    Theme.Color.surface,
+                    in: RoundedRectangle(cornerRadius: Theme.Radius.medium)
+                )
+            }
+            .buttonStyle(.pressable)
+
+            Button(role: .destructive) {
+                confirmingDeleteAll = true
+            } label: {
+                HStack(alignment: .top, spacing: Theme.Spacing.m) {
+                    Image(systemName: "trash.fill")
+                        .font(Theme.Font.title)
+                        .foregroundStyle(Theme.Color.warning)
+                        .frame(width: 32, height: 32)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Delete all blocks")
+                            .font(Theme.Font.title)
+                            .foregroundStyle(Theme.Color.textPrimary)
+                        Text("Removes every block (and its tickets and attachments). Trips stay. This syncs across your devices.")
+                            .font(Theme.Font.caption)
+                            .foregroundStyle(Theme.Color.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .multilineTextAlignment(.leading)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(Theme.Spacing.m)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    Theme.Color.surface,
+                    in: RoundedRectangle(cornerRadius: Theme.Radius.medium)
+                )
+            }
+            .buttonStyle(.pressable)
+        }
+        .confirmationDialog(
+            "Delete every block?",
+            isPresented: $confirmingDeleteAll,
+            titleVisibility: .visible
+        ) {
+            Button("Delete all blocks", role: .destructive) {
+                SampleData.deleteAllBlocks(context: context)
+                Theme.Haptic.blockSaved()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This can't be undone. Trips are kept; blocks, tickets, and attachments are removed everywhere via iCloud.")
+        }
+    }
+
+    private func purgeSampleData() {
+        // Force re-run by clearing the one-shot guard, then call the
+        // cleanup. Idempotent if no sample rows remain.
+        UserDefaults.standard.set(false, forKey: "staybusy.didCleanupSampleData_v1")
+        SampleData.purgeSeededBlocksIfNeeded(context: context)
         Theme.Haptic.blockSaved()
     }
 }

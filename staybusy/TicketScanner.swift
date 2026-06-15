@@ -71,22 +71,29 @@ enum TicketScanner {
     // MARK: - Vision
 
     private static func recognizeText(in cgImage: CGImage) async -> [String] {
+        // VNImageRequestHandler.perform(_:) is synchronous and does
+        // internal dispatch — running it directly under the cooperative
+        // thread pool produces "unsafeForcedSync called from Swift
+        // Concurrent context" warnings. Move it onto a detached task
+        // and resume the continuation from there.
         await withCheckedContinuation { continuation in
-            let request = VNRecognizeTextRequest { request, _ in
-                let observations = request.results as? [VNRecognizedTextObservation] ?? []
-                let lines = observations
-                    .compactMap { $0.topCandidates(1).first?.string }
-                continuation.resume(returning: lines)
-            }
-            request.recognitionLevel = .accurate
-            request.usesLanguageCorrection = false
-            request.recognitionLanguages = ["en-US"]
+            Task.detached(priority: .userInitiated) {
+                let request = VNRecognizeTextRequest { request, _ in
+                    let observations = request.results as? [VNRecognizedTextObservation] ?? []
+                    let lines = observations
+                        .compactMap { $0.topCandidates(1).first?.string }
+                    continuation.resume(returning: lines)
+                }
+                request.recognitionLevel = .accurate
+                request.usesLanguageCorrection = false
+                request.recognitionLanguages = ["en-US"]
 
-            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-            do {
-                try handler.perform([request])
-            } catch {
-                continuation.resume(returning: [])
+                let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+                do {
+                    try handler.perform([request])
+                } catch {
+                    continuation.resume(returning: [])
+                }
             }
         }
     }

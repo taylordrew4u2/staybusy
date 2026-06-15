@@ -104,10 +104,19 @@ struct BlockDetailView: View {
             }
         }
         .onAppear {
+            // Pull synced bytes onto local disk so the URL-based view
+            // code can find them — first opens on a new device.
+            AttachmentStore.materialize(block)
             attachmentURLs = AttachmentStore.urls(for: block.attachmentFilenames)
             if let coord = blockCoordinate {
                 leaveByModel.start(target: coord, arriveBy: block.start)
             }
+        }
+        .onChange(of: block.attachments?.count ?? 0) { _, _ in
+            // Hydrate when CloudKit pulls in new attachments after the
+            // view is already on screen.
+            AttachmentStore.materialize(block)
+            attachmentURLs = AttachmentStore.urls(for: block.attachmentFilenames)
         }
         .onChange(of: block.attachmentFilenames) { _, names in
             attachmentURLs = AttachmentStore.urls(for: names)
@@ -200,18 +209,15 @@ struct BlockDetailView: View {
     }
 
     private func importFromPhotos(_ items: [PhotosPickerItem]) async {
-        var newNames: [String] = []
+        var loaded: [Data] = []
         for item in items {
-            if let data = try? await item.loadTransferable(type: Data.self),
-               let url = AttachmentStore.save(data: data, extension: "jpg") {
-                newNames.append(url.lastPathComponent)
+            if let data = try? await item.loadTransferable(type: Data.self) {
+                loaded.append(data)
             }
         }
         await MainActor.run {
-            if !newNames.isEmpty {
-                var current = block.attachmentFilenames
-                current.append(contentsOf: newNames)
-                block.attachmentFilenames = current
+            for data in loaded {
+                attach(data: data, ext: "jpg")
             }
             photosSelection = []
         }
@@ -219,26 +225,36 @@ struct BlockDetailView: View {
 
     private func saveCameraImage(_ img: UIImage) {
         guard let data = img.jpegData(compressionQuality: 0.85) else { return }
-        if let url = AttachmentStore.save(data: data, extension: "jpg") {
+        attach(data: data, ext: "jpg")
+    }
+
+    private func handleFilesImporter(_ result: Result<[URL], Error>) {
+        guard case .success(let urls) = result else { return }
+        for src in urls {
+            let didAccess = src.startAccessingSecurityScopedResource()
+            defer { if didAccess { src.stopAccessingSecurityScopedResource() } }
+            attach(fromURL: src)
+        }
+    }
+
+    /// Routes through `AttachmentStore.attach(...)` so the file is also
+    /// persisted as a `BlockAttachment` and syncs via CloudKit.
+    private func attach(data: Data, ext: String) {
+        guard let context = block.modelContext else { return }
+        if let url = AttachmentStore.attach(
+            data: data, extension: ext, to: block, in: context
+        ) {
             var current = block.attachmentFilenames
             current.append(url.lastPathComponent)
             block.attachmentFilenames = current
         }
     }
 
-    private func handleFilesImporter(_ result: Result<[URL], Error>) {
-        guard case .success(let urls) = result else { return }
-        var newNames: [String] = []
-        for src in urls {
-            let didAccess = src.startAccessingSecurityScopedResource()
-            defer { if didAccess { src.stopAccessingSecurityScopedResource() } }
-            if let dest = AttachmentStore.copy(from: src) {
-                newNames.append(dest.lastPathComponent)
-            }
-        }
-        if !newNames.isEmpty {
+    private func attach(fromURL src: URL) {
+        guard let context = block.modelContext else { return }
+        if let dest = AttachmentStore.attach(from: src, to: block, in: context) {
             var current = block.attachmentFilenames
-            current.append(contentsOf: newNames)
+            current.append(dest.lastPathComponent)
             block.attachmentFilenames = current
         }
     }
@@ -857,6 +873,82 @@ enum AttachmentStore {
             return dest
         } catch {
             return nil
+        }
+    }
+
+    // MARK: - CloudKit-synced attachments
+    //
+    // Wrappers around the local writes that also persist a
+    // `BlockAttachment` record. SwiftData + CloudKit ships the bytes
+    // via CKAsset; `materialize(...)` reconstructs the local file on
+    // any other signed-in device the first time the block is opened.
+
+    /// Save `data` to disk and create a syncing record bound to
+    /// `block`. Returns the on-disk URL on success.
+    @discardableResult
+    static func attach(
+        data: Data,
+        extension ext: String,
+        to block: Block,
+        in context: ModelContext
+    ) -> URL? {
+        guard let url = save(data: data, extension: ext) else { return nil }
+        addRecord(filename: url.lastPathComponent, data: data, to: block, in: context)
+        return url
+    }
+
+    /// Copy `src` into the attachment store and create a syncing
+    /// record bound to `block`. Returns the destination URL on success.
+    @discardableResult
+    static func attach(
+        from src: URL,
+        to block: Block,
+        in context: ModelContext
+    ) -> URL? {
+        guard let dest = copy(from: src) else { return nil }
+        if let data = try? Data(contentsOf: dest) {
+            addRecord(filename: dest.lastPathComponent, data: data, to: block, in: context)
+        }
+        return dest
+    }
+
+    private static func addRecord(
+        filename: String,
+        data: Data,
+        to block: Block,
+        in context: ModelContext
+    ) {
+        // Dedupe — if a record with this filename already exists on the
+        // block (e.g. legacy back-fill ran first), skip.
+        if (block.attachments ?? []).contains(where: { $0.filename == filename }) {
+            return
+        }
+        let record = BlockAttachment(data: data, filename: filename)
+        record.block = block
+        context.insert(record)
+    }
+
+    /// On views that show this block's attachments, call once on
+    /// appear. For every synced `BlockAttachment` that isn't yet on
+    /// disk locally, writes the bytes to Documents and adds the
+    /// filename to `attachmentFilenames` (so the existing URL-based
+    /// view code finds it). Cheap when there's nothing to do.
+    static func materialize(_ block: Block) {
+        let attachments = block.attachments ?? []
+        guard !attachments.isEmpty else { return }
+        var added = false
+        for attachment in attachments {
+            let dest = documentsDir.appendingPathComponent(attachment.filename)
+            if !FileManager.default.fileExists(atPath: dest.path) {
+                try? attachment.data.write(to: dest, options: .atomic)
+            }
+            if !block.attachmentFilenames.contains(attachment.filename) {
+                block.attachmentFilenames.append(attachment.filename)
+                added = true
+            }
+        }
+        if added {
+            try? block.modelContext?.save()
         }
     }
 
