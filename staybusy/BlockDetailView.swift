@@ -68,6 +68,9 @@ struct BlockDetailView: View {
                     linksSection
                 }
                 infoSection
+                if NotificationManager.shared.isAirportDeparture(block) {
+                    TSAWaitCard(block: block)
+                }
                 if let coord = blockCoordinate {
                     mapSection(coord)
                     DirectionsButtonRow(
@@ -437,9 +440,13 @@ struct BlockDetailView: View {
                     .tracking(1.3)
                     .foregroundStyle(Theme.Color.textSecondary)
             }
-            Text(timeRangeString)
-                .font(Theme.Font.title.monospacedDigit())
-                .foregroundStyle(Theme.Color.textPrimary)
+            if NotificationManager.shared.isAirportDeparture(block) {
+                flightTimeRow
+            } else {
+                Text(timeRangeString)
+                    .font(Theme.Font.title.monospacedDigit())
+                    .foregroundStyle(Theme.Color.textPrimary)
+            }
             if !block.locationName.isEmpty {
                 HStack(spacing: Theme.Spacing.xs) {
                     Image(systemName: "mappin.and.ellipse")
@@ -523,6 +530,59 @@ struct BlockDetailView: View {
         if s.hasPrefix("www.") { s.removeFirst(4) }
         if let slash = s.firstIndex(of: "/") { s = String(s[..<slash]) }
         return s
+    }
+
+    /// Two-column "DEPARTS / LANDS" row for airport-style blocks so
+    /// the landing time is its own first-class field instead of being
+    /// hidden as the second half of a `–` range.
+    private var flightTimeRow: some View {
+        HStack(alignment: .top, spacing: Theme.Spacing.l) {
+            flightTimeCell(label: "DEPARTS", date: block.start, accent: false)
+            ZStack {
+                Rectangle()
+                    .fill(Theme.Color.hourRule)
+                    .frame(width: 1)
+                Image(systemName: "airplane")
+                    .font(Theme.Font.caption)
+                    .foregroundStyle(Theme.Color.accent)
+                    .padding(4)
+                    .background(Theme.Color.surface, in: Circle())
+            }
+            .frame(width: 24)
+            flightTimeCell(label: "LANDS", date: block.end, accent: true)
+        }
+    }
+
+    private func flightTimeCell(label: String, date: Date, accent: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(Theme.Font.caption)
+                .tracking(1.4)
+                .foregroundStyle(Theme.Color.textSecondary)
+            Text(timeOfDay(date))
+                .font(Theme.Font.titleLarge.monospacedDigit())
+                .foregroundStyle(Theme.Color.textPrimary)
+            Text(dayLabel(date))
+                .font(Theme.Font.caption.monospacedDigit())
+                .foregroundStyle(Theme.Color.textTertiary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func timeOfDay(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "h:mm a"
+        return f.string(from: date)
+    }
+
+    private func dayLabel(_ date: Date) -> String {
+        let cal = Calendar.current
+        if cal.isDateInToday(date) { return "Today" }
+        if cal.isDateInTomorrow(date) { return "Tomorrow" }
+        if cal.isDateInYesterday(date) { return "Yesterday" }
+        let f = DateFormatter()
+        f.dateFormat = "EEE, MMM d"
+        return f.string(from: date)
     }
 
     private var timeRangeString: String {
@@ -1175,6 +1235,99 @@ private struct TicketCard: View {
                 .font(Theme.Font.body)
                 .foregroundStyle(Theme.Color.textPrimary)
                 .lineLimit(1)
+        }
+    }
+}
+
+// MARK: - TSA wait card
+
+private struct TSAWaitCard: View {
+    let block: Block
+    @Environment(\.openURL) private var openURL
+
+    private var estimate: TSAService.Estimate {
+        TSAService.estimate(for: block)
+    }
+
+    private var iata: String? {
+        TSAService.iataCode(in: block)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.m) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("TSA WAIT")
+                    .font(Theme.Font.caption)
+                    .tracking(1.4)
+                    .foregroundStyle(Theme.Color.textSecondary)
+                Spacer()
+                Text("Estimated")
+                    .font(Theme.Font.caption)
+                    .foregroundStyle(Theme.Color.textTertiary)
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s) {
+                Text("~\(estimate.minutes)m")
+                    .font(Theme.Font.displayCountdown)
+                    .foregroundStyle(severityColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(estimate.severity.label.uppercased())
+                        .font(Theme.Font.caption)
+                        .tracking(1.2)
+                        .foregroundStyle(severityColor)
+                    if let iata {
+                        Text("Based on \(iata) departure time")
+                            .font(Theme.Font.caption)
+                            .foregroundStyle(Theme.Color.textSecondary)
+                    } else {
+                        Text("Based on departure time")
+                            .font(Theme.Font.caption)
+                            .foregroundStyle(Theme.Color.textSecondary)
+                    }
+                }
+            }
+
+            Text(estimate.context)
+                .font(Theme.Font.body)
+                .foregroundStyle(Theme.Color.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                openURL(TSAService.liveLineURL(for: iata))
+            } label: {
+                HStack(spacing: Theme.Spacing.s) {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                    Text("Check live wait times")
+                        .font(Theme.Font.title)
+                    Spacer(minLength: 0)
+                    Image(systemName: "arrow.up.right")
+                        .font(Theme.Font.caption)
+                }
+                .foregroundStyle(Theme.Color.accent)
+                .padding(.horizontal, Theme.Spacing.m)
+                .padding(.vertical, Theme.Spacing.s)
+                .frame(minHeight: Theme.Size.minTapTarget)
+                .background(
+                    Theme.Color.accent.opacity(0.15),
+                    in: RoundedRectangle(cornerRadius: Theme.Radius.small)
+                )
+            }
+            .buttonStyle(.pressable)
+            .accessibilityLabel("Check live TSA wait times on MyTSA")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Theme.Spacing.l)
+        .background(
+            Theme.Color.surface,
+            in: RoundedRectangle(cornerRadius: Theme.Radius.medium)
+        )
+    }
+
+    private var severityColor: Color {
+        switch estimate.severity {
+        case .low: return Theme.Color.success
+        case .medium: return Theme.Color.warning
+        case .high: return Theme.Color.accent
         }
     }
 }

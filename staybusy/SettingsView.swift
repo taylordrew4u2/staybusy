@@ -22,6 +22,11 @@ struct SettingsView: View {
     @State private var lastSummary: String?
     @State private var confirmingDeleteAll = false
 
+    @AppStorage(TransportMode.storageKey) private var transportModeRaw: String = TransportMode.driving.rawValue
+    private var transportMode: TransportMode {
+        TransportMode(rawValue: transportModeRaw) ?? .driving
+    }
+
     private var mode: ThemeMode {
         get { ThemeMode(rawValue: themeModeRaw) ?? .dark }
     }
@@ -56,6 +61,12 @@ struct SettingsView: View {
                             }
                         }
                         .padding(.horizontal, Theme.Spacing.l)
+
+                        SectionLabel(title: "TRAVEL")
+                            .padding(.horizontal, Theme.Spacing.l)
+
+                        transportSection
+                            .padding(.horizontal, Theme.Spacing.l)
 
                         SectionLabel(title: "CALENDAR")
                             .padding(.horizontal, Theme.Spacing.l)
@@ -93,6 +104,68 @@ struct SettingsView: View {
         guard option != mode else { return }
         themeModeRaw = option.rawValue
         Theme.Haptic.blockSaved()
+    }
+
+    // MARK: - Transport section
+
+    @ViewBuilder
+    private var transportSection: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.m) {
+            HStack(alignment: .top, spacing: Theme.Spacing.m) {
+                Image(systemName: transportMode.symbol)
+                    .font(Theme.Font.title)
+                    .foregroundStyle(Theme.Color.accent)
+                    .frame(width: 32, height: 32)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Travel mode")
+                        .font(Theme.Font.title)
+                        .foregroundStyle(Theme.Color.textPrimary)
+                    Text("StayBusy uses this to estimate how long it'll take you to reach the next block.")
+                        .font(Theme.Font.caption)
+                        .foregroundStyle(Theme.Color.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+
+            HStack(spacing: Theme.Spacing.s) {
+                ForEach(TransportMode.allCases) { mode in
+                    transportChip(for: mode)
+                }
+            }
+        }
+        .padding(Theme.Spacing.m)
+        .background(
+            Theme.Color.surface,
+            in: RoundedRectangle(cornerRadius: Theme.Radius.medium)
+        )
+    }
+
+    private func transportChip(for mode: TransportMode) -> some View {
+        let isSelected = transportMode == mode
+        return Button {
+            if !isSelected {
+                transportModeRaw = mode.rawValue
+                Theme.Haptic.blockSaved()
+            }
+        } label: {
+            VStack(spacing: 4) {
+                Image(systemName: mode.symbol)
+                    .font(Theme.Font.title)
+                Text(mode.label)
+                    .font(Theme.Font.caption)
+            }
+            .foregroundStyle(isSelected ? Color.white : Theme.Color.textPrimary)
+            .frame(maxWidth: .infinity, minHeight: 56)
+            .padding(.vertical, Theme.Spacing.s)
+            .background(
+                isSelected ? Theme.Color.accent : Theme.Color.surfaceElevated,
+                in: RoundedRectangle(cornerRadius: Theme.Radius.small)
+            )
+        }
+        .buttonStyle(.pressable)
+        .accessibilityLabel("\(mode.label) travel mode")
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     // MARK: - Calendar section

@@ -221,6 +221,16 @@ struct BlockEditorView: View {
             } else {
                 await NotificationManager.shared.blockUpdated(resultBlock)
             }
+            // Mirror the block into iOS Calendar when sync is on so
+            // both stores stay aligned. exportBlock is a no-op when
+            // the block already has a calendarEventID (i.e. it came
+            // from iCal in the first place).
+            if isCreate, UserDefaults.standard.bool(forKey: "calendarSyncEnabled") {
+                await CalendarSyncService.shared.exportBlock(
+                    resultBlock,
+                    context: context
+                )
+            }
         }
         dismiss()
     }

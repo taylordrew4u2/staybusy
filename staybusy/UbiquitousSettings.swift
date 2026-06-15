@@ -24,7 +24,8 @@ final class UbiquitousSettings: NSObject {
     /// tripped through KVS on every change.
     private let mirroredKeys: [String] = [
         "themeMode",
-        "calendarSyncEnabled"
+        "calendarSyncEnabled",
+        "transportMode"
     ]
 
     private let cloud = NSUbiquitousKeyValueStore.default

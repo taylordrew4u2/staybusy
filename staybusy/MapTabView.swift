@@ -106,7 +106,17 @@ struct MapTabView: View {
                 }
             }
         }
-        .onAppear { refitCamera() }
+        .onAppear {
+            refitCamera()
+            // Kick off best-effort geocoding for any block in scope
+            // that has a location string but no coords. CLGeocoder is
+            // rate-limited; the service guards against overlapping
+            // runs.
+            Task {
+                await GeocodingService.shared
+                    .geocodeMissingCoordinates(in: context)
+            }
+        }
         .onChange(of: selectedDate) { _, _ in
             dismissSelection()
             refitCamera()

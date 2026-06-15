@@ -136,24 +136,47 @@ struct HomeView: View {
             return
         }
 
-        let draft = await TicketScanner.scan(image)
+        let scan = await TicketScanner.scanFull(image)
+        let draft = scan.draft
 
-        // Pick reasonable defaults — round to the next hour, default
-        // two-hour window so it's visible on the timeline. The user can
-        // adjust once they land in the editor.
-        let cal = Calendar.current
-        let now = Date()
-        let comps = cal.dateComponents([.year, .month, .day, .hour], from: now)
-        let nextHour = cal.date(from: comps)?.addingTimeInterval(3600) ?? now
-        let title = draft.name.isEmpty ? "Flight" : draft.name
+        // Prefer the times we pulled off the ticket. Fall back to "next
+        // hour, 2h window" only when OCR couldn't find a departure.
+        let interval: DateInterval
+        if let parsed = scan.interval {
+            interval = parsed
+        } else {
+            let cal = Calendar.current
+            let now = Date()
+            let comps = cal.dateComponents([.year, .month, .day, .hour], from: now)
+            let nextHour = cal.date(from: comps)?.addingTimeInterval(3600) ?? now
+            interval = DateInterval(
+                start: nextHour,
+                duration: 2 * 3600
+            )
+        }
+
+        // Prefer the flight label ("Flight DL 1234") when the scanner
+        // saw a number, then the ticket's own name field, then a
+        // generic "Flight" fallback.
+        let title: String
+        if let flightLabel = scan.flightLabel {
+            title = "Flight \(flightLabel)"
+        } else if !draft.name.isEmpty {
+            title = draft.name
+        } else {
+            title = "Flight"
+        }
 
         let block = Block(
             title: title,
-            start: nextHour,
-            end: nextHour.addingTimeInterval(2 * 3600),
+            start: interval.start,
+            end: interval.end,
             category: .travel
         )
         context.insert(block)
+        if let trip = resolvedActiveTrip() {
+            block.trip = trip
+        }
 
         // Persist the image as a synced attachment.
         if let jpegData = image.jpegData(compressionQuality: 0.85),
@@ -184,12 +207,47 @@ struct HomeView: View {
 
         await NotificationManager.shared.blockCreated(block)
 
+        // Push to iOS Calendar when sync is enabled so it shows up
+        // alongside the rest of your day in iCal too.
+        if UserDefaults.standard.bool(forKey: "calendarSyncEnabled") {
+            await CalendarSyncService.shared.exportBlock(block, context: context)
+        }
+
         isImportingPass = false
-        importBanner = draft.isEmpty
-            ? "Photo added — confirm the details."
-            : "Ticket filled — confirm the time."
+        importBanner = bannerMessage(for: scan, draft: draft)
         Theme.Haptic.blockSaved()
         navigationPath.append(block)
+    }
+
+    private func bannerMessage(
+        for scan: TicketScanResult,
+        draft: TicketDraft
+    ) -> String {
+        if scan.interval != nil && !draft.isEmpty {
+            return "Ticket and times filled — added to your trip."
+        }
+        if scan.interval != nil {
+            return "Times read off the ticket — confirm the rest."
+        }
+        if !draft.isEmpty {
+            return "Ticket filled — set the time and you're done."
+        }
+        return "Photo added — confirm the details."
+    }
+
+    private func resolvedActiveTrip() -> Trip? {
+        let raw = UserDefaults.standard.string(forKey: "activeTripID") ?? ""
+        let descriptor = FetchDescriptor<Trip>(
+            sortBy: [SortDescriptor(\.startDate, order: .reverse)]
+        )
+        guard let trips = try? context.fetch(descriptor), !trips.isEmpty else {
+            return nil
+        }
+        if let id = PersistentIdentifier.decode(raw),
+           let trip = trips.first(where: { $0.persistentModelID == id }) {
+            return trip
+        }
+        return trips.first
     }
 
     // MARK: - Derived data

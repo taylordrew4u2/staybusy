@@ -5,6 +5,7 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>comgooglemaps</string>
+		<string>mytsa</string>
 	</array>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>StayBusy syncs your iOS Calendar events into the timeline so all your blocks live in one place.</string>

@@ -26,6 +26,7 @@
 import Foundation
 import EventKit
 import SwiftData
+import CoreLocation
 
 @MainActor
 final class CalendarSyncService {
@@ -157,7 +158,60 @@ final class CalendarSyncService {
             try? context.save()
         }
 
+        // Background fill: any imported block without coordinates gets
+        // reverse-geocoded so it can show up on the map. CLGeocoder is
+        // rate-limited, so this runs detached and doesn't block the
+        // sync return.
+        Task { @MainActor in
+            await GeocodingService.shared.geocodeMissingCoordinates(in: context)
+        }
+
         return result
+    }
+
+    // MARK: - Export (StayBusy → iCal)
+
+    /// Two-way push: write `block` into the user's default Calendar so
+    /// the same item shows up in iCal too. Stores the resulting event
+    /// identifier on `block.calendarEventID` so subsequent pulls
+    /// recognize it as already-linked and don't double-insert.
+    ///
+    /// No-op when access is read-only or `block.calendarEventID` is
+    /// already set (treat the iCal side as the source of truth in that
+    /// case — we'd rather not fork the data).
+    @discardableResult
+    func exportBlock(_ block: Block, context: ModelContext) async -> Bool {
+        guard EKEventStore.authorizationStatus(for: .event) == .fullAccess else {
+            return false
+        }
+        guard block.calendarEventID.isEmpty else { return false }
+        guard let calendar = store.defaultCalendarForNewEvents else { return false }
+
+        let event = EKEvent(eventStore: store)
+        event.calendar = calendar
+        event.title = block.title
+        event.startDate = block.start
+        event.endDate = block.end
+        if !block.locationName.isEmpty {
+            event.location = block.locationName
+        }
+        if !block.notes.isEmpty {
+            event.notes = block.notes
+        }
+        if let lat = block.latitude, let lng = block.longitude {
+            let location = EKStructuredLocation(title: block.locationName)
+            location.geoLocation = CLLocation(latitude: lat, longitude: lng)
+            event.structuredLocation = location
+        }
+
+        do {
+            try store.save(event, span: .thisEvent, commit: true)
+            block.calendarEventID = event.eventIdentifier ?? ""
+            try? context.save()
+            return true
+        } catch {
+            return false
+        }
     }
 
     // MARK: - Mapping
@@ -173,6 +227,10 @@ final class CalendarSyncService {
             notes: event.notes ?? ""
         )
         block.calendarEventID = event.eventIdentifier ?? ""
+        if let geo = event.structuredLocation?.geoLocation {
+            block.latitude = geo.coordinate.latitude
+            block.longitude = geo.coordinate.longitude
+        }
         return block
     }
 
@@ -197,6 +255,16 @@ final class CalendarSyncService {
         if block.locationName != location {
             block.locationName = location
             changed = true
+        }
+        // Adopt any updated structured-location coordinates iCal carries.
+        if let geo = event.structuredLocation?.geoLocation {
+            let lat = geo.coordinate.latitude
+            let lng = geo.coordinate.longitude
+            if block.latitude != lat || block.longitude != lng {
+                block.latitude = lat
+                block.longitude = lng
+                changed = true
+            }
         }
         let notes = event.notes ?? ""
         // Only sync notes if the user hasn't customized them — if the

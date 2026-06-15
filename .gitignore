@@ -4,6 +4,7 @@ DerivedData/
 *.xcuserstate
 *.xcscmblueprint
 xcuserdata/
+*.bak
 
 # macOS
 .DS_Store

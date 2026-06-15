@@ -50,6 +50,11 @@ struct staybusyApp: App {
                     UbiquitousSettings.shared.start()
                     SampleData.purgeSeededBlocksIfNeeded(context: container.mainContext)
                     await syncCalendarIfEnabled()
+                    // Catch up any pre-existing imported blocks whose
+                    // location strings never got coordinates — they'd
+                    // otherwise be invisible on the map.
+                    await GeocodingService.shared
+                        .geocodeMissingCoordinates(in: container.mainContext)
                 }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active {

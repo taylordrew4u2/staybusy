@@ -15,34 +15,62 @@ import UIKit
 import Vision
 import PDFKit
 
+/// Bundled result of a ticket scan — the ticket-shaped fields plus an
+/// optional travel interval inferred from the boarding pass (date +
+/// departure time + arrival time). When the times can't be confidently
+/// resolved, `interval` is `nil` and the caller falls back to its own
+/// defaults.
+struct TicketScanResult {
+    var draft: TicketDraft = TicketDraft()
+    var interval: DateInterval?
+    /// The flight number (e.g. "DL 1234") when one is detected. Used
+    /// by the caller to set a nicer block title.
+    var flightLabel: String?
+}
+
 enum TicketScanner {
     /// Run OCR on a UIImage and return a draft populated with anything
     /// we could confidently parse. Empty fields = nothing detected for
     /// that slot; the caller should keep the user's existing values for
     /// those.
     static func scan(_ image: UIImage) async -> TicketDraft {
-        guard let cgImage = image.cgImage else { return TicketDraft() }
+        await scanFull(image).draft
+    }
+
+    /// Like `scan(_:)` but also returns the inferred travel interval
+    /// and flight label. Used by the home-screen importer to create a
+    /// new block with real times.
+    static func scanFull(_ image: UIImage) async -> TicketScanResult {
+        guard let cgImage = image.cgImage else { return TicketScanResult() }
 
         let lines = await recognizeText(in: cgImage)
-        guard !lines.isEmpty else { return TicketDraft() }
+        guard !lines.isEmpty else { return TicketScanResult() }
 
-        return parse(lines: lines)
+        let draft = parse(lines: lines)
+        let interval = parseInterval(lines: lines)
+        let flightLabel = findFlightNumber(in: lines, joinedUpper: lines.joined(separator: " ").uppercased())
+        return TicketScanResult(draft: draft, interval: interval, flightLabel: flightLabel)
     }
 
     /// Scan a file at the given URL. Handles PDFs (renders the first
     /// page) and common image types via `UIImage`. Returns an empty
     /// draft when the file can't be read.
     static func scan(fileURL url: URL) async -> TicketDraft {
+        await scanFull(fileURL: url).draft
+    }
+
+    /// File-URL counterpart to `scanFull(_:)`. Handles PDFs via PDFKit.
+    static func scanFull(fileURL url: URL) async -> TicketScanResult {
         let needsScope = url.startAccessingSecurityScopedResource()
         defer { if needsScope { url.stopAccessingSecurityScopedResource() } }
 
         if url.pathExtension.lowercased() == "pdf" {
-            guard let image = renderFirstPage(of: url) else { return TicketDraft() }
-            return await scan(image)
+            guard let image = renderFirstPage(of: url) else { return TicketScanResult() }
+            return await scanFull(image)
         }
         guard let data = try? Data(contentsOf: url),
-              let image = UIImage(data: data) else { return TicketDraft() }
-        return await scan(image)
+              let image = UIImage(data: data) else { return TicketScanResult() }
+        return await scanFull(image)
     }
 
     /// Render the first page of a PDF as a UIImage suitable for OCR.
@@ -143,6 +171,171 @@ enum TicketScanner {
     private static let labelledSeatRegex = #/SEAT[:\s]+(\d{1,3}[A-KL]?)/#
     private static let gateRegex = #/\bGATE\s*[:#]?\s*([A-Z]?\d{1,3}[A-Z]?)\b/#
     private static let flightNumberRegex = #/\b([A-Z]{2,3})\s*([0-9]{1,4})\b/#
+
+    // MARK: - Time / date parsing
+    //
+    // Boarding passes vary wildly in how they print times: "10:35 AM",
+    // "10:35", "1035", "1035A", and pretty much every separator under
+    // the sun. We use `NSDataDetector` (which Apple maintains) for the
+    // primary date/time pass, then fall back to regex extraction so
+    // 24-hour times without dates still come through.
+
+    private static func parseInterval(lines: [String]) -> DateInterval? {
+        let joined = lines.joined(separator: "\n")
+        let date = findDate(in: joined, lines: lines)
+        let labelledTimes = findLabelledTimes(in: lines)
+
+        let departure = labelledTimes.departure
+        let arrival = labelledTimes.arrival
+
+        // Need at least a departure time to be useful.
+        guard let depTime = departure else { return nil }
+
+        let depDate = combine(date: date ?? Date(), time: depTime)
+        let arrDate: Date = {
+            if let arrival {
+                var combined = combine(date: date ?? depDate, time: arrival)
+                // Roll past midnight if arrival looks earlier than
+                // departure (common red-eye case).
+                if combined <= depDate {
+                    combined = Calendar.current.date(byAdding: .day, value: 1, to: combined) ?? combined
+                }
+                return combined
+            }
+            return depDate.addingTimeInterval(2 * 3600)
+        }()
+
+        return DateInterval(start: depDate, end: arrDate)
+    }
+
+    /// Find the first date in the OCR output via `NSDataDetector`, or
+    /// scan lines with month-name + day shapes when the detector misses.
+    private static func findDate(in joined: String, lines: [String]) -> Date? {
+        if let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.date.rawValue) {
+            let range = NSRange(joined.startIndex..., in: joined)
+            for match in detector.matches(in: joined, options: [], range: range) {
+                if let date = match.date { return Calendar.current.startOfDay(for: date) }
+            }
+        }
+        return nil
+    }
+
+    private struct LabelledTimes {
+        var departure: DateComponents?
+        var arrival: DateComponents?
+    }
+
+    private static func findLabelledTimes(in lines: [String]) -> LabelledTimes {
+        var result = LabelledTimes()
+        for (index, line) in lines.enumerated() {
+            let upper = line.uppercased()
+
+            // Departure-aliases for flights, trains, buses, events.
+            if result.departure == nil,
+               isDepartureLine(upper) {
+                if let time = firstTime(in: line)
+                    ?? lookAheadTime(after: index, in: lines)
+                {
+                    result.departure = time
+                }
+            }
+
+            if result.arrival == nil,
+               isArrivalLine(upper) {
+                if let time = firstTime(in: line)
+                    ?? lookAheadTime(after: index, in: lines)
+                {
+                    result.arrival = time
+                }
+            }
+        }
+
+        // Fallback: if we still have no departure, take the first
+        // standalone time on the ticket — typical layouts lead with
+        // the departure prominently.
+        if result.departure == nil {
+            for line in lines {
+                if let time = firstTime(in: line) {
+                    result.departure = time
+                    break
+                }
+            }
+        }
+        return result
+    }
+
+    private static func isDepartureLine(_ upper: String) -> Bool {
+        let signals = [
+            "DEPART", "DEPARTURE", "DEPARTS", "DEP ", "LEAVES",
+            "BOARDING", "DOORS OPEN", "START TIME", "SHOW STARTS"
+        ]
+        return signals.contains { upper.contains($0) }
+    }
+
+    private static func isArrivalLine(_ upper: String) -> Bool {
+        let signals = [
+            "ARRIV", "ARRIVAL", "ARRIVES", "ARR ", "LANDS",
+            "ENDS", "DOORS CLOSE", "END TIME", "SHOW ENDS"
+        ]
+        return signals.contains { upper.contains($0) }
+    }
+
+    private static func lookAheadTime(after index: Int, in lines: [String], window: Int = 2) -> DateComponents? {
+        let upperBound = min(lines.count, index + 1 + window)
+        for i in (index + 1)..<upperBound {
+            if let time = firstTime(in: lines[i]) {
+                return time
+            }
+        }
+        return nil
+    }
+
+    /// 12- and 24-hour time matcher. Returns `(hour, minute)` in 24h.
+    private static let twelveHourTimeRegex = #/\b(\d{1,2}):(\d{2})\s*(AM|PM|A|P)\b/#
+    private static let twentyFourHourTimeRegex = #/\b([01]?\d|2[0-3]):([0-5]\d)\b/#
+    private static let compactAirlineTimeRegex = #/\b(\d{4})\s*(A|P)\b/#
+
+    private static func firstTime(in line: String) -> DateComponents? {
+        let upper = line.uppercased()
+        if let match = try? twelveHourTimeRegex.firstMatch(in: upper) {
+            let hour = Int(match.output.1) ?? 0
+            let minute = Int(match.output.2) ?? 0
+            let isPM = String(match.output.3).hasPrefix("P")
+            let normalized = normalize12HourHour(hour, isPM: isPM)
+            return DateComponents(hour: normalized, minute: minute)
+        }
+        if let match = try? twentyFourHourTimeRegex.firstMatch(in: upper) {
+            let hour = Int(match.output.1) ?? 0
+            let minute = Int(match.output.2) ?? 0
+            return DateComponents(hour: hour, minute: minute)
+        }
+        if let match = try? compactAirlineTimeRegex.firstMatch(in: upper) {
+            // 4-digit airline format: "1035A" / "1035P".
+            let digits = String(match.output.1)
+            guard digits.count == 4 else { return nil }
+            let hour = Int(digits.prefix(2)) ?? 0
+            let minute = Int(digits.suffix(2)) ?? 0
+            let isPM = String(match.output.2) == "P"
+            let normalized = normalize12HourHour(hour, isPM: isPM)
+            return DateComponents(hour: normalized, minute: minute)
+        }
+        return nil
+    }
+
+    private static func normalize12HourHour(_ hour: Int, isPM: Bool) -> Int {
+        // 12 AM = midnight (0); 12 PM = noon (12); 1-11 PM = + 12.
+        if hour == 12 { return isPM ? 12 : 0 }
+        return isPM ? hour + 12 : hour
+    }
+
+    private static func combine(date: Date, time: DateComponents) -> Date {
+        let cal = Calendar.current
+        var comps = cal.dateComponents([.year, .month, .day], from: date)
+        comps.hour = time.hour ?? 0
+        comps.minute = time.minute ?? 0
+        comps.second = 0
+        return cal.date(from: comps) ?? date
+    }
 
     private static func findConfirmationCode(in lines: [String], joinedUpper: String) -> String? {
         // Prefer labelled matches — they're unambiguous.

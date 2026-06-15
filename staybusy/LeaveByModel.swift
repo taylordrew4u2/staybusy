@@ -128,10 +128,11 @@ final class LeaveByModel: NSObject, CLLocationManagerDelegate {
     @MainActor
     private func computeETA(from source: CLLocationCoordinate2D) async {
         guard let target = self.target, let arriveBy = self.arriveBy else { return }
+        let mode = TransportMode.current
         let request = MKDirections.Request()
         request.source = MKMapItem(placemark: MKPlacemark(coordinate: source))
         request.destination = MKMapItem(placemark: MKPlacemark(coordinate: target))
-        request.transportType = .automobile
+        request.transportType = mode.mkType
 
         do {
             let response = try await MKDirections(request: request).calculateETA()
@@ -140,7 +141,38 @@ final class LeaveByModel: NSObject, CLLocationManagerDelegate {
                 .addingTimeInterval(-bufferMinutes * 60)
             state = .ready(leaveBy: leave, eta: response.expectedTravelTime)
         } catch {
+            // Transit isn't available everywhere; fall back to driving
+            // once before giving up so the user still sees a useful
+            // number when their region has no transit data.
+            if mode == .transit {
+                request.transportType = .automobile
+                do {
+                    let response = try await MKDirections(request: request).calculateETA()
+                    let leave = arriveBy
+                        .addingTimeInterval(-response.expectedTravelTime)
+                        .addingTimeInterval(-bufferMinutes * 60)
+                    state = .ready(leaveBy: leave, eta: response.expectedTravelTime)
+                    return
+                } catch {
+                    state = .stale
+                    return
+                }
+            }
             state = .stale
+        }
+    }
+
+    /// Re-fire the ETA computation against the existing target. Called
+    /// when the user flips the Transport Mode setting so the leave-by
+    /// figure updates immediately.
+    func refresh() {
+        guard target != nil, arriveBy != nil else { return }
+        switch manager.authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            state = .computing
+            manager.requestLocation()
+        default:
+            break
         }
     }
 

@@ -10,6 +10,7 @@
 
 import SwiftUI
 import SwiftData
+import CoreLocation
 
 // MARK: - Root
 
@@ -25,9 +26,26 @@ struct TripTabView: View {
     @State private var showingSettings = false
     @State private var showingTripSheet = false
     @State private var tripBeingEdited: Trip?
+    @AppStorage("tripViewMode") private var viewModeRaw: String = ViewMode.agenda.rawValue
     @Environment(\.modelContext) private var context
     @AppStorage("calendarSyncEnabled") private var calendarSyncEnabled: Bool = false
     @AppStorage("activeTripID") private var activeTripID: String = ""
+
+    enum ViewMode: String, CaseIterable, Identifiable {
+        case agenda
+        case days
+        var id: String { rawValue }
+        var label: String {
+            switch self {
+            case .agenda: return "Agenda"
+            case .days: return "Days"
+            }
+        }
+    }
+
+    private var viewMode: ViewMode {
+        ViewMode(rawValue: viewModeRaw) ?? .agenda
+    }
 
     /// The trip whose agenda is on screen. We resolve the persisted
     /// `activeTripID` against the current `trips` list; if that ID
@@ -108,10 +126,13 @@ struct TripTabView: View {
                         action: { searchText = "" }
                     )
                 } else {
-                    agenda(
-                        summary: isSearching ? visibleSummary : fullSummary,
-                        showSummaryCard: !isSearching
-                    )
+                    let summary = isSearching ? visibleSummary : fullSummary
+                    switch viewMode {
+                    case .agenda:
+                        agenda(summary: summary, showSummaryCard: !isSearching)
+                    case .days:
+                        daysGrid(summary: summary, showSummaryCard: !isSearching)
+                    }
                 }
             }
             .searchable(
@@ -125,6 +146,9 @@ struct TripTabView: View {
                 if !trips.isEmpty {
                     ToolbarItem(placement: .topBarLeading) {
                         tripSwitcherMenu
+                    }
+                    ToolbarItem(placement: .principal) {
+                        viewModePicker
                     }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
@@ -301,6 +325,68 @@ struct TripTabView: View {
         context.delete(block)
         try? context.save()
         pendingDelete = nil
+    }
+
+    // MARK: - View-mode picker
+
+    private var viewModePicker: some View {
+        Picker("View", selection: Binding(
+            get: { viewMode },
+            set: { viewModeRaw = $0.rawValue }
+        )) {
+            ForEach(ViewMode.allCases) { mode in
+                Text(mode.label).tag(mode)
+            }
+        }
+        .pickerStyle(.segmented)
+        .frame(maxWidth: 200)
+        .accessibilityLabel("Trip view mode")
+    }
+
+    // MARK: - Days grid
+    //
+    // One tappable card per day in the trip. Tapping a card calls
+    // `onSelectDay(date)`, which the parent uses to switch to the
+    // Today tab and scroll its timeline to that date — so the
+    // current-day case naturally falls through to the live "today"
+    // timeline behaviour the user already knows.
+
+    @ViewBuilder
+    private func daysGrid(summary: TripSummary, showSummaryCard: Bool) -> some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: Theme.Spacing.l) {
+                if showSummaryCard {
+                    SummaryCard(summary: summary)
+                        .padding(.horizontal, Theme.Spacing.l)
+                        .padding(.top, Theme.Spacing.s)
+                }
+
+                VStack(spacing: Theme.Spacing.m) {
+                    ForEach(summary.days) { day in
+                        Button {
+                            onSelectDay(day.date)
+                        } label: {
+                            DayTile(day: day)
+                        }
+                        .buttonStyle(.pressable)
+                        .accessibilityLabel(dayTileAccessibility(day))
+                        .accessibilityHint("Double tap to open this day's timeline")
+                    }
+                }
+                .padding(.horizontal, Theme.Spacing.l)
+
+                Color.clear.frame(height: Theme.Spacing.xl)
+            }
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    private func dayTileAccessibility(_ day: DaySummary) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE, MMMM d"
+        let blockCount = day.blocks.count
+        let blocksWord = blockCount == 1 ? "block" : "blocks"
+        return "\(f.string(from: day.date)). \(blockCount) \(blocksWord)."
     }
 
     // MARK: - Agenda body
@@ -601,9 +687,186 @@ private struct SummaryCard: View {
 
 // MARK: - Day header (sticky)
 
+// MARK: - Day tile (Days view-mode)
+//
+// One day represented as a chunky tappable card. Shows the date, the
+// block count, a density strip, and the first one or two block titles
+// so the user can glance at what each day looks like before diving
+// in. Today's tile gets a NOW accent so it's visually findable.
+
+private struct DayTile: View {
+    let day: DaySummary
+
+    @State private var forecast: WeatherService.DayForecast?
+
+    private var isToday: Bool {
+        Calendar.current.isDateInToday(day.date)
+    }
+
+    private var blockCount: Int { day.blocks.count }
+
+    /// Closest coords for this day — first located block on the day,
+    /// else `nil`. Used both for weather queries and to know whether to
+    /// even attempt one.
+    private var weatherCoord: CLLocationCoordinate2D? {
+        for block in day.blocks {
+            if let lat = block.latitude, let lng = block.longitude {
+                return CLLocationCoordinate2D(latitude: lat, longitude: lng)
+            }
+        }
+        return nil
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s) {
+            HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(eyebrow)
+                        .font(Theme.Font.caption)
+                        .tracking(1.4)
+                        .foregroundStyle(isToday ? Theme.Color.accent : Theme.Color.textSecondary)
+                    HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s) {
+                        Text(weekday)
+                            .font(Theme.Font.titleLarge)
+                            .foregroundStyle(Theme.Color.textPrimary)
+                        Text(dateLabel)
+                            .font(Theme.Font.body)
+                            .foregroundStyle(Theme.Color.textSecondary)
+                    }
+                }
+                Spacer(minLength: 0)
+                if let forecast {
+                    weatherChip(for: forecast)
+                }
+                Text(countLine)
+                    .font(Theme.Font.caption)
+                    .foregroundStyle(Theme.Color.textTertiary)
+                Image(systemName: "chevron.right")
+                    .font(Theme.Font.caption)
+                    .foregroundStyle(Theme.Color.textTertiary)
+            }
+
+            if blockCount == 0 {
+                Text("Nothing scheduled")
+                    .font(Theme.Font.body)
+                    .foregroundStyle(Theme.Color.textSecondary)
+            } else {
+                DensityBar(day: day)
+                    .frame(height: 8)
+                ForEach(day.blocks.prefix(2), id: \.persistentModelID) { block in
+                    HStack(spacing: Theme.Spacing.xs) {
+                        Image(systemName: block.category.symbol)
+                            .font(Theme.Font.caption)
+                            .foregroundStyle(block.category.textOnSurface)
+                        Text(block.title)
+                            .font(Theme.Font.body)
+                            .foregroundStyle(Theme.Color.textPrimary)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                        Text(timeLabel(for: block))
+                            .font(Theme.Font.caption)
+                            .foregroundStyle(Theme.Color.textSecondary)
+                    }
+                }
+                if blockCount > 2 {
+                    Text("+ \(blockCount - 2) more")
+                        .font(Theme.Font.caption)
+                        .foregroundStyle(Theme.Color.textTertiary)
+                }
+            }
+        }
+        .padding(Theme.Spacing.l)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            Theme.Color.surface,
+            in: RoundedRectangle(cornerRadius: Theme.Radius.medium)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Radius.medium)
+                .stroke(
+                    isToday ? Theme.Color.accent : Color.clear,
+                    lineWidth: Theme.Stroke.currentBlockBorder
+                )
+        )
+        .task(id: weatherTaskID) {
+            guard forecast == nil, let coord = weatherCoord else { return }
+            forecast = await WeatherService.shared.forecast(
+                for: day.date,
+                at: coord
+            )
+        }
+    }
+
+    /// Distinct identity for the .task so it re-fires when the day or
+    /// the available coords change.
+    private var weatherTaskID: String {
+        let lat = weatherCoord?.latitude ?? .nan
+        let lng = weatherCoord?.longitude ?? .nan
+        return "\(day.date.timeIntervalSince1970)-\(lat)-\(lng)"
+    }
+
+    private var eyebrow: String {
+        let cal = Calendar.current
+        if cal.isDateInToday(day.date) { return "TODAY · LIVE" }
+        if cal.isDateInTomorrow(day.date) { return "TOMORROW" }
+        if cal.isDateInYesterday(day.date) { return "YESTERDAY" }
+        let f = DateFormatter()
+        f.dateFormat = "EEE"
+        return f.string(from: day.date).uppercased()
+    }
+
+    private var weekday: String {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE"
+        return f.string(from: day.date)
+    }
+
+    private var dateLabel: String {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        return f.string(from: day.date)
+    }
+
+    private var countLine: String {
+        if blockCount == 0 { return "Empty" }
+        return "\(blockCount) \(blockCount == 1 ? "block" : "blocks")"
+    }
+
+    private func timeLabel(for block: Block) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "h:mm a"
+        return f.string(from: block.start)
+    }
+
+    private func weatherChip(for forecast: WeatherService.DayForecast) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: forecast.symbolName)
+                .font(Theme.Font.caption)
+            Text(forecast.temperatureLabel())
+                .font(Theme.Font.caption.monospacedDigit())
+        }
+        .foregroundStyle(Theme.Color.textSecondary)
+        .padding(.horizontal, Theme.Spacing.s)
+        .padding(.vertical, 3)
+        .background(Theme.Color.surfaceElevated, in: Capsule())
+        .accessibilityLabel("Weather: \(forecast.condition), high \(forecast.highTemp.value.rounded()), low \(forecast.lowTemp.value.rounded())")
+    }
+}
+
 private struct DayHeader: View {
     let day: DaySummary
     let onJumpToDay: () -> Void
+
+    @State private var forecast: WeatherService.DayForecast?
+
+    private var weatherCoord: CLLocationCoordinate2D? {
+        for block in day.blocks {
+            if let lat = block.latitude, let lng = block.longitude {
+                return CLLocationCoordinate2D(latitude: lat, longitude: lng)
+            }
+        }
+        return nil
+    }
 
     var body: some View {
         Button(action: onJumpToDay) {
@@ -623,6 +886,18 @@ private struct DayHeader: View {
                     }
                 }
                 Spacer(minLength: 0)
+                if let forecast {
+                    HStack(spacing: 4) {
+                        Image(systemName: forecast.symbolName)
+                        Text(forecast.temperatureLabel())
+                            .monospacedDigit()
+                    }
+                    .font(Theme.Font.caption)
+                    .foregroundStyle(Theme.Color.textSecondary)
+                    .padding(.horizontal, Theme.Spacing.s)
+                    .padding(.vertical, 3)
+                    .background(Theme.Color.surfaceElevated, in: Capsule())
+                }
                 Text(countLine)
                     .font(Theme.Font.caption)
                     .foregroundStyle(Theme.Color.textSecondary)
@@ -646,6 +921,19 @@ private struct DayHeader: View {
         .buttonStyle(.pressable)
         .accessibilityLabel("\(weekday), \(dateLabel). \(countLine)")
         .accessibilityHint("Double tap to view this day's timeline")
+        .task(id: weatherTaskID) {
+            guard forecast == nil, let coord = weatherCoord else { return }
+            forecast = await WeatherService.shared.forecast(
+                for: day.date,
+                at: coord
+            )
+        }
+    }
+
+    private var weatherTaskID: String {
+        let lat = weatherCoord?.latitude ?? .nan
+        let lng = weatherCoord?.longitude ?? .nan
+        return "\(day.date.timeIntervalSince1970)-\(lat)-\(lng)"
     }
 
     private var eyebrow: String {

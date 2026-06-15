@@ -21,6 +21,7 @@ struct NowNextBar: View {
     let allBlocks: [Block]
 
     @State private var leaveBy = LeaveByModel()
+    @AppStorage(TransportMode.storageKey) private var transportModeRaw: String = TransportMode.driving.rawValue
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { ctx in
@@ -36,6 +37,11 @@ struct NowNextBar: View {
         // requests out of the per-second TimelineView re-render.
         .task(id: routeableTargetSignature) {
             syncLeaveBy()
+        }
+        // Re-compute when the user flips Transport Mode so the
+        // countdown updates without waiting for the next block change.
+        .onChange(of: transportModeRaw) { _, _ in
+            leaveBy.refresh()
         }
     }
 
