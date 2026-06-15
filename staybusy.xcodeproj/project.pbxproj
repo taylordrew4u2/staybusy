@@ -425,7 +425,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = staybusy/Info.plist;
-				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "To add events  you do ";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "StayBusy syncs your iOS Calendar events into the timeline so all your blocks live in one place.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "StayBusy uses the camera to capture ticket and confirmation photos.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "StayBusy uses your location to estimate when to leave for each scheduled block.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -460,7 +460,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = staybusy/Info.plist;
-				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "To add events  you do ";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "StayBusy syncs your iOS Calendar events into the timeline so all your blocks live in one place.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "StayBusy uses the camera to capture ticket and confirmation photos.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "StayBusy uses your location to estimate when to leave for each scheduled block.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
