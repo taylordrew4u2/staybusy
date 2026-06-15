@@ -14,6 +14,7 @@ import SwiftUI
 import SwiftData
 import PhotosUI
 import UIKit
+import UniformTypeIdentifiers
 
 struct TicketEditorSheet: View {
     let block: Block
@@ -33,6 +34,7 @@ struct TicketEditorSheet: View {
     // OCR state
     @State private var photoItem: PhotosPickerItem?
     @State private var showingCamera = false
+    @State private var showingFilesPicker = false
     @State private var isScanning = false
     @State private var scanFeedback: String?
 
@@ -146,9 +148,22 @@ struct TicketEditorSheet: View {
             CameraPicker { image in
                 showingCamera = false
                 guard let image else { return }
-                Task { await scan(from: image) }
+                Task { await scanAndAttach(image: image, sourceExtension: "jpg") }
             }
             .ignoresSafeArea()
+        }
+        .fileImporter(
+            isPresented: $showingFilesPicker,
+            allowedContentTypes: [.pdf, .image],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                Task { await scanAndAttach(fileURL: url) }
+            case .failure:
+                scanFeedback = "Couldn't open that file."
+            }
         }
         .confirmationDialog(
             "Delete this ticket?",
@@ -171,10 +186,10 @@ struct TicketEditorSheet: View {
                     .foregroundStyle(Theme.Color.accent)
                     .frame(width: 32, height: 32)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Scan a boarding pass")
+                    Text("Scan or upload a boarding pass")
                         .font(Theme.Font.title)
                         .foregroundStyle(Theme.Color.textPrimary)
-                    Text("StayBusy reads the confirmation code, seat, gate, and flight from a photo.")
+                    Text("StayBusy reads the confirmation code, seat, gate, and flight from a photo or PDF, and keeps the file with the block.")
                         .font(Theme.Font.caption)
                         .foregroundStyle(Theme.Color.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -191,6 +206,11 @@ struct TicketEditorSheet: View {
                     title: "Photos",
                     symbol: "photo.on.rectangle.angled",
                     action: { showingPhotosPicker = true }
+                )
+                scanButton(
+                    title: "Files",
+                    symbol: "doc.fill",
+                    action: { showingFilesPicker = true }
                 )
             }
 
@@ -253,24 +273,56 @@ struct TicketEditorSheet: View {
     @MainActor
     private func scan(from item: PhotosPickerItem) async {
         defer { photoItem = nil }
-        isScanning = true
-        scanFeedback = nil
         guard let data = try? await item.loadTransferable(type: Data.self),
               let image = UIImage(data: data) else {
-            isScanning = false
             scanFeedback = "Couldn't read that image."
             return
         }
-        await scan(from: image)
+        await scanAndAttach(image: image, sourceExtension: "jpg")
     }
 
+    /// Scan an in-memory image. Saves a JPEG copy as a block attachment
+    /// so the user can pull the boarding pass back up from detail view
+    /// later.
     @MainActor
-    private func scan(from image: UIImage) async {
+    private func scanAndAttach(image: UIImage, sourceExtension ext: String) async {
         isScanning = true
         scanFeedback = nil
+        attach(image: image, preferredExtension: ext)
         let draft = await TicketScanner.scan(image)
         isScanning = false
         applyScanned(draft)
+    }
+
+    /// Scan a file URL — handles PDFs via PDFKit + images. Copies the
+    /// original file into the attachment store so the boarding pass
+    /// stays readable from BlockDetailView.
+    @MainActor
+    private func scanAndAttach(fileURL: URL) async {
+        isScanning = true
+        scanFeedback = nil
+        attach(fileURL: fileURL)
+        let draft = await TicketScanner.scan(fileURL: fileURL)
+        isScanning = false
+        applyScanned(draft)
+    }
+
+    private func attach(image: UIImage, preferredExtension ext: String) {
+        guard let data = image.jpegData(compressionQuality: 0.85) else { return }
+        guard let saved = AttachmentStore.save(data: data, extension: ext) else { return }
+        addAttachment(filename: saved.lastPathComponent)
+    }
+
+    private func attach(fileURL: URL) {
+        let needsScope = fileURL.startAccessingSecurityScopedResource()
+        defer { if needsScope { fileURL.stopAccessingSecurityScopedResource() } }
+        guard let saved = AttachmentStore.copy(from: fileURL) else { return }
+        addAttachment(filename: saved.lastPathComponent)
+    }
+
+    private func addAttachment(filename: String) {
+        guard !block.attachmentFilenames.contains(filename) else { return }
+        block.attachmentFilenames.append(filename)
     }
 
     /// Merge OCR results into the form. Only fills empty fields so the

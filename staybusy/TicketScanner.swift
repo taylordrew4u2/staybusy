@@ -13,6 +13,7 @@
 import Foundation
 import UIKit
 import Vision
+import PDFKit
 
 enum TicketScanner {
     /// Run OCR on a UIImage and return a draft populated with anything
@@ -26,6 +27,45 @@ enum TicketScanner {
         guard !lines.isEmpty else { return TicketDraft() }
 
         return parse(lines: lines)
+    }
+
+    /// Scan a file at the given URL. Handles PDFs (renders the first
+    /// page) and common image types via `UIImage`. Returns an empty
+    /// draft when the file can't be read.
+    static func scan(fileURL url: URL) async -> TicketDraft {
+        let needsScope = url.startAccessingSecurityScopedResource()
+        defer { if needsScope { url.stopAccessingSecurityScopedResource() } }
+
+        if url.pathExtension.lowercased() == "pdf" {
+            guard let image = renderFirstPage(of: url) else { return TicketDraft() }
+            return await scan(image)
+        }
+        guard let data = try? Data(contentsOf: url),
+              let image = UIImage(data: data) else { return TicketDraft() }
+        return await scan(image)
+    }
+
+    /// Render the first page of a PDF as a UIImage suitable for OCR.
+    /// We aim for ~2000pt longest side — accurate enough for OCR
+    /// without blowing through memory on huge boarding passes.
+    private static func renderFirstPage(of url: URL) -> UIImage? {
+        guard let document = PDFDocument(url: url),
+              let page = document.page(at: 0) else { return nil }
+        let bounds = page.bounds(for: .mediaBox)
+        let longest = max(bounds.width, bounds.height)
+        let scale = max(1, min(3, 2000 / longest))
+        let size = CGSize(
+            width: bounds.width * scale,
+            height: bounds.height * scale
+        )
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { ctx in
+            UIColor.white.setFill()
+            ctx.fill(CGRect(origin: .zero, size: size))
+            ctx.cgContext.translateBy(x: 0, y: size.height)
+            ctx.cgContext.scaleBy(x: scale, y: -scale)
+            page.draw(with: .mediaBox, to: ctx.cgContext)
+        }
     }
 
     // MARK: - Vision
